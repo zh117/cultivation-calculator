@@ -15,18 +15,19 @@
 | 文件 | 职责 |
 |------|------|
 | `lib/types/index.ts` | 完整 TypeScript 类型定义 |
-| `lib/calculator/core.ts` | 纯函数计算核心（境界消耗、时长、崩坏检测） |
-| `lib/data/presets.ts` | 4套预设方案配置 |
+| `lib/calculator/core.ts` | 纯函数计算核心（境界消耗、时长、崩坏检测、转换率/吸收效率） |
+| `lib/data/presets.ts` | 4套预设方案配置（凡人流/高武流/速成流/困难模式） |
 | `lib/data/realms.ts` | 九大境界配置数据 |
 | `lib/storage/schemes.ts` | localStorage 方案存储管理 |
-| `components/CultivationCalculator.tsx` | 主计算器（状态管理） |
-| `components/ParameterPanel.tsx` | 参数设置面板 |
-| `components/AlertList.tsx` | 崩坏警报展示 |
-| `components/RealmTable.tsx` | 境界耗时表格 |
-| `components/SchemeManager.tsx` | 方案保存/加载/删除 |
+| `components/CultivationCalculator.tsx` | 主计算器（状态管理、预设切换） |
+| `components/ParameterPanel.tsx` | 参数设置面板（基础/转换率/吸收效率/资源配置分组） |
+| `components/PresetDetailPanel.tsx` | 预设详情弹窗（参数对比表格） |
+| `components/AlertList.tsx` | 崩坏警报展示（动画效果） |
+| `components/RealmTable.tsx` | 境界耗时表格（资源自给率百分比） |
+| `components/SchemeManager.tsx` | 方案保存/加载/删除/导入导出 |
 | `components/CollapsibleSection.tsx` | 可折叠面板复用组件 |
 | `app/page.tsx` | 主页面入口 |
-| `app/layout.tsx` | 根布局 |
+| `app/layout.tsx` | 根布局（中文 metadata） |
 
 ---
 
@@ -92,6 +93,25 @@ if (单次突破需求 > 灵脉最大年产出) {
 }
 ```
 
+### 辅助计算
+
+**转换率**（影响灵石消耗）：
+```typescript
+转换率 = 天赋 × 悟性 × 功法品质
+实际消耗 = 基础消耗 / 转换率
+```
+
+**吸收效率**（影响修炼时长）：
+```typescript
+吸收效率 = 体质 × 环境 × 闭关 × 顿悟
+修炼时长 = 资源消耗 / (基础吸收率 × 吸收效率)
+```
+
+**资源自给率**：
+```typescript
+自给率 = 灵脉年产出 / 单次突破需求 × 100%
+```
+
 ---
 
 ## 数据流
@@ -152,12 +172,12 @@ export function calculateSubLevelCost(
 
 ## 预设方案配置
 
-| 预设 | 基数 | 小系数 | 大系数 | 特点 |
-|------|------|--------|--------|------|
-| 凡人流 | 12 | 2 | 10 | 经典数值体系 |
-| 高武流 | 10 | 1.5 | 5 | 升级较快 |
-| 速成流 | 8 | 1.2 | 3 | 极速突破 |
-| 困难模式 | 20 | 2.5 | 15 | 资源匮乏 |
+| 预设 | 基数 | 小系数 | 大系数 | 转换率 | 吸收效率 | 特点 |
+|------|------|--------|--------|--------|----------|------|
+| 凡人流 | 12 | 2 | 10 | 1.00 | 1.00 | 经典数值体系 |
+| 高武流 | 10 | 1.5 | 5 | 1.50 | 1.25 | 升级较快 |
+| 速成流 | 8 | 1.2 | 3 | 2.00 | 1.50 | 极速突破 |
+| 困难模式 | 20 | 2.5 | 15 | 0.80 | 0.90 | 资源匮乏 |
 
 ---
 
@@ -187,12 +207,13 @@ export function calculateSubLevelCost(
 
 ## 后续待办
 
-- [ ] 添加方案对比功能
-- [ ] 添加数据可视化图表
-- [ ] 支持导出方案为 JSON/图片
-- [ ] 添加更多预设方案
-- [ ] 支持自定义境界配置
-- [ ] 编写单元测试
+- [x] 添加方案对比功能（已实现：PresetDetailPanel.tsx）
+- [x] 支持导出方案为 JSON（已实现：SchemeManager.tsx）
+- [x] 添加更多预设方案（已实现：凡人流/高武流/速成流/困难模式）
+- [ ] 添加数据可视化图表（消耗曲线图、时间分布图）
+- [ ] 支持自定义境界配置（用户可编辑九大境界）
+- [ ] 编写单元测试（核心计算函数）
+- [ ] 添加方案分享功能（生成分享链接）
 
 ---
 

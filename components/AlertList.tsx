@@ -13,6 +13,12 @@ const CheckShieldIcon = () => (
   </svg>
 );
 
+const InfoIcon = () => (
+  <svg className="w-5 h-5" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
 const WarningIcon = () => (
   <svg className="w-5 h-5" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -32,26 +38,33 @@ const CriticalIcon = () => (
 );
 
 const severityConfig = {
+  notice: {
+    bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+    borderColor: 'border-blue-200 dark:border-blue-800/50',
+    textColor: 'text-blue-900 dark:text-blue-100',
+    icon: <InfoIcon />,
+    label: '提示',
+  },
   warning: {
     bgColor: 'bg-amber-50 dark:bg-amber-900/20',
     borderColor: 'border-amber-200 dark:border-amber-800/50',
     textColor: 'text-amber-900 dark:text-amber-100',
     icon: <WarningIcon />,
-    label: '警告',
+    label: '资源缺口',
   },
   error: {
     bgColor: 'bg-red-50 dark:bg-red-900/20',
     borderColor: 'border-red-200 dark:border-red-800/50',
     textColor: 'text-red-900 dark:text-red-100',
     icon: <ErrorIcon />,
-    label: '错误',
+    label: '双重困境',
   },
   critical: {
     bgColor: 'bg-red-100 dark:bg-red-900/30',
     borderColor: 'border-red-300 dark:border-red-700/50',
     textColor: 'text-red-900 dark:text-red-100',
     icon: <CriticalIcon />,
-    label: '严重',
+    label: '设定崩塌',
   },
 };
 
@@ -74,6 +87,7 @@ export function AlertList({ alerts }: AlertListProps) {
     critical: alerts.filter(a => a.severity === 'critical'),
     error: alerts.filter(a => a.severity === 'error'),
     warning: alerts.filter(a => a.severity === 'warning'),
+    notice: alerts.filter(a => a.severity === 'notice'),
   };
 
   return (
@@ -92,6 +106,9 @@ export function AlertList({ alerts }: AlertListProps) {
           alerts={groupedAlerts.warning}
           config={severityConfig.warning}
         />
+      )}
+      {groupedAlerts.notice.length > 0 && (
+        <AlertGroup alerts={groupedAlerts.notice} config={severityConfig.notice} />
       )}
     </div>
   );
@@ -118,6 +135,9 @@ function AlertGroup({ alerts, config }: AlertGroupProps) {
           <li key={index} className={`text-sm ${config.textColor} flex items-start gap-2`}>
             <span className="mt-0.5 w-1 h-1 rounded-full bg-current flex-shrink-0" />
             <span>{alert.message}</span>
+            {alert.isTheoreticalBreakdown === false && (
+              <span className="text-xs opacity-70">(可通过剧情解决)</span>
+            )}
           </li>
         ))}
       </ul>

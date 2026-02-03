@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { ParameterPanel } from './ParameterPanel';
 import { RealmTable, RealmSummaryTable } from './RealmTable';
 import { AlertList } from './AlertList';
 import { SchemeManager } from './SchemeManager';
 import { CollapsibleSection } from './CollapsibleSection';
+import { PresetDetailPanel } from './PresetDetailPanel';
 import type { CalculationParams, ResourceConfig, CalculationResult, SavedScheme } from '@/lib/types';
 import { MORTAL_PRESET, PRESET_OPTIONS, PRESETS } from '@/lib/data/presets';
 import { calculateAll, validateParams, formatDuration } from '@/lib/calculator/core';
@@ -54,6 +55,12 @@ const MoreIcon = () => (
   </svg>
 );
 
+const InfoIcon = () => (
+  <svg className="w-4 h-4" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
 export function CultivationCalculator() {
   // 状态管理
   const [params, setParams] = useState<CalculationParams>(MORTAL_PRESET.params);
@@ -62,6 +69,26 @@ export function CultivationCalculator() {
   const [selectedPreset, setSelectedPreset] = useState('mortal');
   const [paramErrors, setParamErrors] = useState<string[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showPresetDetail, setShowPresetDetail] = useState(false);
+
+  // 菜单容器 ref - 用于检测点击外部
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // 点击外部关闭菜单
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+
+    if (menuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [menuOpen]);
 
   // 计算结果
   useEffect(() => {
@@ -100,12 +127,20 @@ export function CultivationCalculator() {
     setSelectedPreset('mortal');
   };
 
-  // 计算效率总系数
-  const totalEfficiency = useMemo(() => {
+  // 计算转换率系数（影响灵石消耗）
+  const conversionRate = useMemo(() => {
     return (
-      params.techniqueQuality *
-      params.environmentFactor *
+      params.talent *
+      params.comprehension *
+      params.techniqueQuality
+    ).toFixed(2);
+  }, [params]);
+
+  // 计算吸收效率系数（影响修炼时长）
+  const absorptionRate = useMemo(() => {
+    return (
       params.physiqueFactor *
+      params.environmentFactor *
       params.retreatFactor *
       params.epiphanyFactor
     ).toFixed(2);
@@ -113,13 +148,6 @@ export function CultivationCalculator() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 dark:from-gray-950 dark:via-gray-900 dark:to-slate-950">
-      {/* 全局遮罩层 - 点击关闭菜单 */}
-      {menuOpen && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setMenuOpen(false)}
-        />
-      )}
 
       {/* 头部 - 精简版 */}
       <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
@@ -134,7 +162,7 @@ export function CultivationCalculator() {
           </div>
 
           {/* 操作下拉菜单 */}
-          <div className="relative z-50">
+          <div ref={menuRef} className="relative z-50">
             <button
               onClick={() => setMenuOpen(!menuOpen)}
               className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer"
@@ -144,10 +172,19 @@ export function CultivationCalculator() {
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1">
+              <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
                   {/* 预设选择 */}
                   <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-700">
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">预设方案</div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="text-xs text-gray-500 dark:text-gray-400">预设方案</div>
+                      <button
+                        onClick={() => { setShowPresetDetail(true); setMenuOpen(false); }}
+                        className="p-1 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors cursor-pointer"
+                        title="查看当前预设的详细系数"
+                      >
+                        <InfoIcon />
+                      </button>
+                    </div>
                     <div className="flex flex-wrap gap-1">
                       {PRESET_OPTIONS.map(option => (
                         <button
@@ -209,15 +246,28 @@ export function CultivationCalculator() {
                 />
 
                 {/* 效率总览 */}
-                <div className="mt-4 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-100 dark:border-blue-800/30">
-                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                    总效率系数
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800/30">
+                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-0.5">
+                      转换率（影响消耗）
+                    </div>
+                    <div className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
+                      {conversionRate}x
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                      天赋 × 悟性 × 功法
+                    </div>
                   </div>
-                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                    {totalEfficiency}x
-                  </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-500 mt-1.5">
-                    功法 × 环境 × 体质 × 闭关 × 顿悟
+                  <div className="p-3 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/30">
+                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-0.5">
+                      吸收效率（影响时长）
+                    </div>
+                    <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                      {absorptionRate}x
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                      体质 × 环境 × 闭关 × 顿悟
+                    </div>
                   </div>
                 </div>
               </div>
@@ -389,6 +439,14 @@ export function CultivationCalculator() {
           <p className="mt-1">用于检测修仙小说世界观数值的自洽性和崩坏风险</p>
         </div>
       </footer>
+
+      {/* 预设详情面板 */}
+      {showPresetDetail && (
+        <PresetDetailPanel
+          presetId={selectedPreset}
+          onClose={() => setShowPresetDetail(false)}
+        />
+      )}
     </div>
   );
 }

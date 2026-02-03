@@ -42,10 +42,16 @@ export function RealmTable({ realms, subLevels }: RealmTableProps) {
               单次消耗
             </th>
             <th className="px-3 py-2.5 text-right font-medium text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">
-              修炼时长
+              理论时长
+            </th>
+            <th className="px-3 py-2.5 text-right font-medium text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">
+              资源时长
             </th>
             <th className="px-3 py-2.5 text-right font-medium text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">
               累计时长
+            </th>
+            <th className="px-3 py-2.5 text-right font-medium text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">
+              瓶颈
             </th>
             <th className="px-3 py-2.5 text-right font-medium text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">
               剩余寿命
@@ -88,10 +94,30 @@ export function RealmTable({ realms, subLevels }: RealmTableProps) {
                   {formatSpiritStones(row.cost)}
                 </td>
                 <td className="px-3 py-2 text-right text-gray-600 dark:text-gray-400 text-xs">
-                  {formatDuration(row.duration)}
+                  {formatDuration(row.theoreticalDuration)}
+                </td>
+                <td className={`px-3 py-2 text-right text-xs ${
+                  row.bottleneckRatio > 2
+                    ? 'text-amber-600 dark:text-amber-400 font-medium'
+                    : 'text-gray-600 dark:text-gray-400'
+                }`}>
+                  {formatDuration(row.resourceLimitedDuration)}
                 </td>
                 <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100 font-medium text-xs">
-                  {formatDuration(row.cumulativeDuration)}
+                  {formatDuration(row.cumulativeTheoreticalDuration)}
+                </td>
+                <td className="px-3 py-2 text-right text-xs">
+                  <span className={`font-mono ${
+                    row.bottleneckRatio > 10
+                      ? 'text-red-600 dark:text-red-400 font-bold'
+                      : row.bottleneckRatio > 5
+                      ? 'text-amber-600 dark:text-amber-400 font-semibold'
+                      : row.bottleneckRatio > 2
+                      ? 'text-yellow-600 dark:text-yellow-400'
+                      : 'text-gray-500 dark:text-gray-400'
+                  }`}>
+                    {row.bottleneckRatio.toFixed(1)}x
+                  </span>
                 </td>
                 <td className="px-3 py-2 text-right">
                   <span
@@ -124,6 +150,21 @@ export function RealmTable({ realms, subLevels }: RealmTableProps) {
           })}
         </tbody>
       </table>
+      {/* 图例说明 */}
+      <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-xs text-gray-500 dark:text-gray-400 px-3">
+        <div className="flex items-center gap-2">
+          <span className="font-medium">理论时长：</span>
+          <span>纯吸收能力（不考虑资源限制）</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="font-medium">资源时长：</span>
+          <span>受灵脉产量限制</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="font-medium">瓶颈比例：</span>
+          <span>资源时长 ÷ 理论时长</span>
+        </div>
+      </div>
     </div>
   );
 }

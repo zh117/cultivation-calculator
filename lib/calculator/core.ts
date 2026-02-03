@@ -2,7 +2,7 @@
 // 核心计算函数（纯函数）
 // ============================================================================
 
-import type { CalculationParams, ResourceConfig, CalculationResult, SubLevelResult, RealmSummary, Alert } from '@/lib/types';
+import type { CalculationParams, CultivationParams, AbsorptionParams, ResourceConfig, CalculationResult, SubLevelResult, RealmSummary, Alert, DurationResult } from '@/lib/types';
 import { REALM_CONFIGS } from '@/lib/data/realms';
 
 // ============================================================================
@@ -30,6 +30,34 @@ const RESOURCE_TYPE_MULTIPLIERS: Record<string, number> = {
 const BASE_PRODUCTION_PER_LEVEL = 100;
 
 // ============================================================================
+// 转换率 & 吸收效率计算
+// ============================================================================
+
+/**
+ * 计算转换率系数（影响资源消耗）
+ * 值越高，消耗越少（天赋越高，需要的灵石越少）
+ */
+export function calculateConversionRate(params: CultivationParams): number {
+  const talent = params.talent ?? 1.0;
+  const comprehension = params.comprehension ?? 1.0;
+  const technique = params.techniqueQuality ?? 1.0;
+  // 转换率越高，实际消耗越少：rawCost / conversionRate
+  return talent * comprehension * technique;
+}
+
+/**
+ * 计算吸收效率系数（影响吸收速度）
+ * 值越高，吸收越快
+ */
+export function calculateAbsorptionRate(params: AbsorptionParams): number {
+  const physique = params.physiqueFactor ?? 1.0;
+  const environment = params.environmentFactor ?? 1.0;
+  const retreat = params.retreatFactor ?? 1.0;
+  const epiphany = params.epiphanyFactor ?? 1.0;
+  return physique * environment * retreat * epiphany;
+}
+
+// ============================================================================
 // 计算函数
 // ============================================================================
 
@@ -48,6 +76,7 @@ const BASE_PRODUCTION_PER_LEVEL = 100;
  * @param realmIndex - 境界索引（0开始）
  * @param subLevelIndex - 小境界索引（0开始）
  * @param qiCondensationLayers - 炼气层数
+ * @param conversionRate - 转换率系数（值越高，消耗越少）
  * @returns 资源消耗（下品灵石）
  */
 export function calculateSubLevelCost(
@@ -56,19 +85,20 @@ export function calculateSubLevelCost(
   largeMultiplier: number,
   realmIndex: number,
   subLevelIndex: number,
-  qiCondensationLayers: number
+  qiCondensationLayers: number,
+  conversionRate: number = 1.0
 ): number {
   // 炼气期（第一个境界）的层数可能不是4层
   const firstRealmSubLevels = qiCondensationLayers;
 
   // 首境第一个小境界
   if (realmIndex === 0 && subLevelIndex === 0) {
-    return baseCost;
+    return baseCost / conversionRate;
   }
 
   // 首境后续小境界
   if (realmIndex === 0) {
-    return baseCost * Math.pow(smallMultiplier, subLevelIndex);
+    return (baseCost * Math.pow(smallMultiplier, subLevelIndex)) / conversionRate;
   }
 
   // 计算首境最后一个小境界的消耗
@@ -79,27 +109,40 @@ export function calculateSubLevelCost(
 
   // 本大境界第一个小境界
   if (subLevelIndex === 0) {
-    return realmBaseCost * largeMultiplier;
+    return (realmBaseCost * largeMultiplier) / conversionRate;
   }
 
   // 本大境界后续小境界
-  return realmBaseCost * largeMultiplier * Math.pow(smallMultiplier, subLevelIndex);
+  return (realmBaseCost * largeMultiplier * Math.pow(smallMultiplier, subLevelIndex)) / conversionRate;
 }
 
 /**
- * 计算总效率系数
+ * 计算两种时长（理论时长 vs 资源限制时长）
  */
-export function calculateEfficiencyFactor(params: CalculationParams): number {
-  return (
-    params.techniqueQuality *
-    params.environmentFactor *
-    params.physiqueFactor *
-    params.retreatFactor *
-    params.epiphanyFactor
-  );
+export function calculateDualDuration(
+  cost: number,
+  absorptionRate: number,
+  resourceProduction: number
+): DurationResult {
+  // 理论时长：纯吸收能力，不考虑资源限制
+  const effectiveAbsorptionRate = BASE_ABSORPTION_RATE * absorptionRate;
+  const theoreticalDuration = cost / effectiveAbsorptionRate;
+
+  // 资源限制时长：受灵脉产量限制
+  const resourceLimitedDuration = cost / resourceProduction;
+
+  // 瓶颈比例：资源限制时长 / 理论时长
+  const bottleneckRatio = resourceLimitedDuration / theoreticalDuration;
+
+  return {
+    theoreticalDuration,
+    resourceLimitedDuration,
+    bottleneckRatio,
+  };
 }
 
 /**
+ * @deprecated 使用 calculateDualDuration 替代
  * 计算修炼时长（年）
  */
 export function calculateDuration(
@@ -108,6 +151,13 @@ export function calculateDuration(
 ): number {
   const effectiveRate = BASE_ABSORPTION_RATE * efficiencyFactor;
   return cost / effectiveRate;
+}
+
+/**
+ * 计算总效率系数（保留兼容性）
+ */
+export function calculateEfficiencyFactor(params: CalculationParams): number {
+  return calculateAbsorptionRate(params);
 }
 
 /**
@@ -158,11 +208,14 @@ export function calculateAll(
   const alerts: Alert[] = [];
 
   let cumulativeCost = 0;
-  let cumulativeDuration = 0;
+  let cumulativeTheoreticalDuration = 0;
+  let cumulativeResourceDuration = 0;
   let maxSingleCost = 0;
   let maxRealmReached = '';
 
-  const efficiencyFactor = calculateEfficiencyFactor(params);
+  // 计算转换率和吸收率
+  const conversionRate = calculateConversionRate(params);
+  const absorptionRate = calculateAbsorptionRate(params);
 
   // 计算资源产出
   const mineOutput = calculateResourceProduction(
@@ -182,32 +235,37 @@ export function calculateAll(
     const realm = REALM_CONFIGS[realmIndex];
     const realmSubLevels: SubLevelResult[] = [];
     let realmTotalCost = 0;
-    let realmTotalDuration = 0;
+    let realmTotalTheoreticalDuration = 0;
+    let realmTotalResourceDuration = 0;
 
     // 遍历小境界
     for (let subLevelIndex = 0; subLevelIndex < realm.subLevels.length; subLevelIndex++) {
       const subLevel = realm.subLevels[subLevelIndex];
 
-      // 计算消耗
+      // 计算消耗（考虑转换率）
       const cost = calculateSubLevelCost(
         params.baseCost,
         params.smallRealmMultiplier,
         params.largeRealmMultiplier,
         realmIndex,
         subLevelIndex,
-        params.qiCondensationLayers
+        params.qiCondensationLayers,
+        conversionRate
       );
 
       cumulativeCost += cost;
       realmTotalCost += cost;
 
-      // 计算时长
-      const duration = calculateDuration(cost, efficiencyFactor);
-      cumulativeDuration += duration;
-      realmTotalDuration += duration;
+      // 计算两种时长
+      const durationResult = calculateDualDuration(cost, absorptionRate, maxProduction);
 
-      // 剩余寿命
-      const lifespanRemaining = realm.lifespan - cumulativeDuration;
+      cumulativeTheoreticalDuration += durationResult.theoreticalDuration;
+      cumulativeResourceDuration += durationResult.resourceLimitedDuration;
+      realmTotalTheoreticalDuration += durationResult.theoreticalDuration;
+      realmTotalResourceDuration += durationResult.resourceLimitedDuration;
+
+      // 剩余寿命（基于理论时长）
+      const lifespanRemaining = realm.lifespan - cumulativeTheoreticalDuration;
 
       const result: SubLevelResult = {
         realmName: realm.name,
@@ -215,10 +273,15 @@ export function calculateAll(
         subLevelIndex,
         cost,
         cumulativeCost,
-        duration,
-        cumulativeDuration,
+        duration: durationResult.theoreticalDuration, // 保留兼容性
+        cumulativeDuration: cumulativeTheoreticalDuration, // 保留兼容性
+        theoreticalDuration: durationResult.theoreticalDuration,
+        cumulativeTheoreticalDuration,
+        resourceLimitedDuration: durationResult.resourceLimitedDuration,
+        cumulativeResourceDuration,
+        bottleneckRatio: durationResult.bottleneckRatio,
         lifespanRemaining,
-        isLifespanExceeded: cumulativeDuration > realm.lifespan,
+        isLifespanExceeded: cumulativeTheoreticalDuration > realm.lifespan,
       };
 
       subLevelResults.push(result);
@@ -230,8 +293,8 @@ export function calculateAll(
         maxRealmReached = `${realm.name}${subLevel.name}`;
       }
 
-      // 检测寿命不足（规则1）
-      if (cumulativeDuration > realm.lifespan && alerts.length < 50) {
+      // 检测寿命不足（规则1：使用理论时长判断）
+      if (cumulativeTheoreticalDuration > realm.lifespan && alerts.length < 50) {
         const existingAlert = alerts.find(
           a => a.type === 'lifespan' && a.realm === realm.name
         );
@@ -239,15 +302,16 @@ export function calculateAll(
           alerts.push({
             type: 'lifespan',
             realm: realm.name,
-            message: `[寿命不足] ${realm.name}: 需${formatDuration(cumulativeDuration)}，但只有${realm.lifespan}年`,
-            severity: cumulativeDuration > realm.lifespan * 1.5 ? 'critical' : 'error',
-            actualValue: cumulativeDuration,
+            message: `[理论崩塌] ${realm.name}: 理论需${formatDuration(cumulativeTheoreticalDuration)}，但只有${realm.lifespan}年`,
+            severity: cumulativeTheoreticalDuration > realm.lifespan * 1.5 ? 'critical' : 'error',
+            actualValue: cumulativeTheoreticalDuration,
             threshold: realm.lifespan,
+            isTheoreticalBreakdown: true,
           });
         }
       }
 
-      // 检测资源断档（规则2）
+      // 检测资源断档（规则2：降级为 warning，可通过剧情解决）
       if (cost > maxProduction && alerts.length < 50) {
         const existingAlert = alerts.find(
           a => a.type === 'resource' && a.realm === realm.name
@@ -256,10 +320,29 @@ export function calculateAll(
           alerts.push({
             type: 'resource',
             realm: realm.name,
-            message: `[资源断档] ${realm.name}${subLevel.name}: 单次需${formatSpiritStones(cost)}灵石，但灵脉最多年产${formatSpiritStones(maxProduction)}`,
-            severity: cost > maxProduction * 10 ? 'critical' : 'error',
+            message: `[资源缺口] ${realm.name}${subLevel.name}: 单次需${formatSpiritStones(cost)}，但灵脉最多年产${formatSpiritStones(maxProduction)}`,
+            severity: cost > maxProduction * 10 ? 'error' : 'warning',
             actualValue: cost,
             threshold: maxProduction,
+            isTheoreticalBreakdown: false,
+          });
+        }
+      }
+
+      // 检测瓶颈比例（仅当瓶颈严重且寿元不足时）
+      if (durationResult.bottleneckRatio > 2 && cumulativeTheoreticalDuration > realm.lifespan && alerts.length < 50) {
+        const existingAlert = alerts.find(
+          a => a.type === 'bottleneck' && a.realm === realm.name
+        );
+        if (!existingAlert) {
+          alerts.push({
+            type: 'bottleneck',
+            realm: realm.name,
+            message: `[雪上加霜] 理论可成但寿元不足，且资源限制时长是理论的 ${durationResult.bottleneckRatio.toFixed(1)} 倍`,
+            severity: 'error',
+            actualValue: durationResult.bottleneckRatio,
+            threshold: 2,
+            isTheoreticalBreakdown: true,
           });
         }
       }
@@ -268,12 +351,12 @@ export function calculateAll(
     realmSummaries.push({
       realmName: realm.name,
       totalCost: realmTotalCost,
-      totalDuration: realmTotalDuration,
+      totalDuration: realmTotalTheoreticalDuration, // 保留兼容性
       subLevels: realmSubLevels,
     });
 
     // 如果寿命已经不足，停止后续计算
-    if (cumulativeDuration > realm.lifespan) {
+    if (cumulativeTheoreticalDuration > realm.lifespan) {
       break;
     }
   }
@@ -287,6 +370,7 @@ export function calculateAll(
       severity: 'warning',
       actualValue: params.smallRealmMultiplier,
       threshold: 2.5,
+      isTheoreticalBreakdown: false,
     });
   }
 
@@ -298,6 +382,7 @@ export function calculateAll(
       severity: 'warning',
       actualValue: params.largeRealmMultiplier,
       threshold: 20,
+      isTheoreticalBreakdown: false,
     });
   }
 
@@ -305,7 +390,7 @@ export function calculateAll(
     realms: realmSummaries,
     subLevels: subLevelResults,
     alerts,
-    totalDuration: cumulativeDuration,
+    totalDuration: cumulativeTheoreticalDuration, // 保留兼容性
     maxRealmReached,
     resourceSelfSufficiency: {
       mineOutput,
@@ -338,16 +423,26 @@ export function validateParams(params: CalculationParams): string[] {
     errors.push('炼气层数应在3-20之间');
   }
 
+  // 转换率参数
+  if (params.talent < 0.1 || params.talent > 10) {
+    errors.push('天赋应在0.1-10之间');
+  }
+
+  if (params.comprehension < 0.1 || params.comprehension > 10) {
+    errors.push('悟性应在0.1-10之间');
+  }
+
   if (params.techniqueQuality < 0.1 || params.techniqueQuality > 10) {
     errors.push('功法品质应在0.1-10之间');
   }
 
-  if (params.environmentFactor < 0.1 || params.environmentFactor > 10) {
-    errors.push('环境系数应在0.1-10之间');
-  }
-
+  // 吸收效率参数
   if (params.physiqueFactor < 0.1 || params.physiqueFactor > 10) {
     errors.push('体系数应在0.1-10之间');
+  }
+
+  if (params.environmentFactor < 0.1 || params.environmentFactor > 10) {
+    errors.push('环境系数应在0.1-10之间');
   }
 
   if (params.retreatFactor < 0.1 || params.retreatFactor > 10) {
