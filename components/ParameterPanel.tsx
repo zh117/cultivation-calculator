@@ -1,6 +1,6 @@
 'use client';
 
-import type { CalculationParams, ResourceConfig } from '@/lib/types';
+import type { CalculationParams, ResourceConfig, SpiritualRootType } from '@/lib/types';
 
 interface ParameterPanelProps {
   params: CalculationParams;
@@ -58,6 +58,15 @@ export function ParameterPanel({
     { value: 3.0, label: '玄品', color: 'text-blue-600' },
     { value: 5.0, label: '地品', color: 'text-purple-600' },
     { value: 10.0, label: '天品', color: 'text-purple-600' },
+  ];
+
+  // 灵根选项（影响灵石消耗）
+  const spiritualRootOptions = [
+    { value: 'waste' as SpiritualRootType, label: '废灵根', sublabel: '五灵根', coefficient: 1.0, color: 'text-red-600' },
+    { value: 'mixed' as SpiritualRootType, label: '杂灵根', sublabel: '四灵根', coefficient: 0.9, color: 'text-orange-600' },
+    { value: 'triple' as SpiritualRootType, label: '三灵根', sublabel: '三灵根', coefficient: 0.8, color: 'text-yellow-600' },
+    { value: 'dual' as SpiritualRootType, label: '双灵根', sublabel: '双灵根', coefficient: 0.6, color: 'text-green-600' },
+    { value: 'heavenly' as SpiritualRootType, label: '天灵根', sublabel: '单灵根', coefficient: 0.3, color: 'text-purple-600' },
   ];
 
   // 吸收效率参数选项（影响修炼时长）
@@ -287,6 +296,38 @@ export function ParameterPanel({
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* 灵根类型 - 新增 */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+              灵根类型
+            </label>
+            <div className="grid grid-cols-5 gap-1.5">
+              {spiritualRootOptions.map(option => (
+                <button
+                  key={option.value}
+                  onClick={() => updateParam('spiritualRootType', option.value)}
+                  className="group relative px-2 py-2 text-xs font-medium rounded-lg transition-all cursor-pointer"
+                >
+                  <span className={`${
+                    params.spiritualRootType === option.value
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 group-hover:bg-gray-200 dark:group-hover:bg-gray-700'
+                  } absolute inset-0 rounded-lg transition-all`}></span>
+                  <div className="relative z-10 flex flex-col items-center gap-0.5">
+                    <span className="font-medium">{option.label}</span>
+                    <span className="text-[10px] opacity-70">{option.sublabel}</span>
+                  </div>
+                  <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs font-semibold rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
+                    系数{option.coefficient}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1.5 px-1">
+              灵根越少，修炼效率越高（系数越小，灵石消耗越少）
+            </p>
           </div>
         </div>
       </div>

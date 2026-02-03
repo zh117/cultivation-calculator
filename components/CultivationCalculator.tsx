@@ -9,7 +9,7 @@ import { CollapsibleSection } from './CollapsibleSection';
 import { PresetDetailPanel } from './PresetDetailPanel';
 import type { CalculationParams, ResourceConfig, CalculationResult, SavedScheme } from '@/lib/types';
 import { MORTAL_PRESET, PRESET_OPTIONS, PRESETS } from '@/lib/data/presets';
-import { calculateAll, validateParams, formatDuration } from '@/lib/calculator/core';
+import { calculateAll, validateParams, formatDuration, calculateConversionRate } from '@/lib/calculator/core';
 
 // SVG 图标组件 - 添加明确的尺寸约束
 const RefreshIcon = () => (
@@ -129,11 +129,7 @@ export function CultivationCalculator() {
 
   // 计算转换率系数（影响灵石消耗）
   const conversionRate = useMemo(() => {
-    return (
-      params.talent *
-      params.comprehension *
-      params.techniqueQuality
-    ).toFixed(2);
+    return calculateConversionRate(params).toFixed(2);
   }, [params]);
 
   // 计算吸收效率系数（影响修炼时长）
@@ -255,7 +251,7 @@ export function CultivationCalculator() {
                       {conversionRate}x
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                      天赋 × 悟性 × 功法
+                      天赋 × 悟性 × 功法 ÷ 灵根系数
                     </div>
                   </div>
                   <div className="p-3 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/30">

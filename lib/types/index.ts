@@ -8,6 +8,19 @@
 export type ResourceGrade = 'inferior' | 'medium' | 'superior' | 'extreme';
 
 /**
+ * 灵根类型
+ */
+export type SpiritualRootType = 'waste' | 'mixed' | 'triple' | 'dual' | 'heavenly';
+
+/**
+ * 灵根配置
+ */
+export interface SpiritualRoot {
+  type: SpiritualRootType;
+  coefficient: number;
+}
+
+/**
  * 资源类型
  */
 export type ResourceType = 'mine' | 'plant';
@@ -59,6 +72,7 @@ export interface CultivationParams {
   talent: number;           // 天赋（1.0=标准，2.0=天才消耗减半）
   comprehension: number;    // 悟性（影响功法发挥）
   techniqueQuality: number; // 功法品质
+  spiritualRootType: SpiritualRootType; // 灵根类型
 }
 
 /**

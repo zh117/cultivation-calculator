@@ -22,6 +22,7 @@ export const MORTAL_PRESET: PresetConfig = {
     talent: 1.0,
     comprehension: 1.0,
     techniqueQuality: 1.0,
+    spiritualRootType: 'waste', // 废灵根（五灵根）
     // 吸收效率参数（影响时长）
     physiqueFactor: 1.0,
     environmentFactor: 1.0,
@@ -55,6 +56,7 @@ export const GENIUS_PRESET: PresetConfig = {
     talent: 2.0,           // 天才，消耗减半
     comprehension: 1.5,
     techniqueQuality: 1.5, // 灵品功法
+    spiritualRootType: 'heavenly', // 天灵根（单灵根）
     // 吸收效率参数（影响时长）
     physiqueFactor: 2.0,   // 天灵根，吸收也快
     environmentFactor: 1.0,
@@ -88,6 +90,7 @@ export const HIGH_MARTIAL_PRESET: PresetConfig = {
     talent: 1.5,
     comprehension: 1.2,
     techniqueQuality: 1.2,
+    spiritualRootType: 'dual', // 双灵根
     // 吸收效率参数（影响时长）
     physiqueFactor: 1.2,
     environmentFactor: 1.2,
@@ -121,6 +124,7 @@ export const TYCOON_PRESET: PresetConfig = {
     talent: 1.0,
     comprehension: 1.0,
     techniqueQuality: 2.0, // 灵品上阶
+    spiritualRootType: 'triple', // 三灵根
     // 吸收效率参数（影响时长）
     physiqueFactor: 1.0,
     environmentFactor: 3.0, // 大型灵脉
@@ -154,6 +158,7 @@ export const FAST_CULTIVATION_PRESET: PresetConfig = {
     talent: 2.0,
     comprehension: 2.0,
     techniqueQuality: 2.0,
+    spiritualRootType: 'dual', // 双灵根
     // 吸收效率参数（影响时长）
     physiqueFactor: 1.5,
     environmentFactor: 1.5,
@@ -187,6 +192,7 @@ export const HARD_MODE_PRESET: PresetConfig = {
     talent: 0.8,           // 天赋一般
     comprehension: 0.8,
     techniqueQuality: 0.8,
+    spiritualRootType: 'waste', // 废灵根（五灵根）
     // 吸收效率参数（影响时长）
     physiqueFactor: 0.8,
     environmentFactor: 0.8,

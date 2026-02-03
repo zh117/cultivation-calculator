@@ -12,6 +12,21 @@ import { REALM_CONFIGS } from '@/lib/data/realms';
 /** 基础吸收速度（下品灵石/年） */
 const BASE_ABSORPTION_RATE = 100;
 
+/** 灵根系数映射表
+ * 废灵根（五灵根）: 1.0
+ * 杂灵根（四灵根）: 0.9
+ * 三灵根: 0.8
+ * 双灵根: 0.6
+ * 天灵根（单灵根）: 0.3
+ */
+const SPIRITUAL_ROOT_COEFFICIENTS: Record<string, number> = {
+  waste: 1.0,      // 废灵根（五灵根）
+  mixed: 0.9,      // 杂灵根（四灵根）
+  triple: 0.8,     // 三灵根
+  dual: 0.6,       // 双灵根
+  heavenly: 0.3,   // 天灵根（单灵根）
+};
+
 /** 资源档位倍率 */
 const GRADE_MULTIPLIERS: Record<string, number> = {
   inferior: 1,
@@ -41,8 +56,11 @@ export function calculateConversionRate(params: CultivationParams): number {
   const talent = params.talent ?? 1.0;
   const comprehension = params.comprehension ?? 1.0;
   const technique = params.techniqueQuality ?? 1.0;
+  const spiritualRootType = params.spiritualRootType ?? 'waste';
+  const spiritualRootCoeff = SPIRITUAL_ROOT_COEFFICIENTS[spiritualRootType] ?? 1.0;
   // 转换率越高，实际消耗越少：rawCost / conversionRate
-  return talent * comprehension * technique;
+  // 灵根系数越小，转换率越高（天灵根0.3的系数会让消耗更少）
+  return (talent * comprehension * technique) / spiritualRootCoeff;
 }
 
 /**
