@@ -1,0 +1,56 @@
+{
+  "framework": "Next.js",
+  "techStack": ["TypeScript", "Tailwind CSS", "React 19"],
+  "checks": {
+    "projectRules": [
+      {
+        "id": "typescript-strict",
+        "name": "TypeScript 严格模式",
+        "description": "确保使用 TypeScript 严格类型检查"
+      },
+      {
+        "id": "component-structure",
+        "name": "组件结构规范",
+        "description": "组件应遵循单一职责原则，props 接口清晰定义"
+      },
+      {
+        "id": "calculation-purity",
+        "name": "计算逻辑纯函数",
+        "description": "数值计算逻辑应为纯函数，便于测试和验证"
+      },
+      {
+        "id": "state-immutability",
+        "name": "状态不可变性",
+        "description": "状态更新应使用不可变模式，避免直接修改"
+      }
+    ],
+    "domainRules": [
+      {
+        "id": "realm-calculation",
+        "name": "境界计算正确性",
+        "description": "境界消耗/时长计算公式必须与需求规格一致"
+      },
+      {
+        "id": "resource-unit",
+        "name": "资源单位一致性",
+        "description": "灵石等单位必须正确转换（100:1比例）"
+      },
+      {
+        "id": "collapse-check",
+        "name": "崩坏检测完整性",
+        "description": "必须包含寿命匹配和资源断档两项检测"
+      }
+    ],
+    "universalRules": [
+      "类型安全 - 避免使用 any，使用明确的类型定义",
+      "错误处理 - 边界情况有适当处理，避免静默失败",
+      "命名规范 - 变量/函数命名语义清晰，遵循命名约定",
+      "代码注释 - 复杂计算逻辑必须有注释说明",
+      "性能优化 - 避免不必要的重渲染和计算"
+    ]
+  },
+  "qualityThresholds": {
+    "typescript": "strict",
+    "coverage": 80
+  }
+}
