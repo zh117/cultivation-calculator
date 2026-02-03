@@ -1,0 +1,140 @@
+{
+  "meta": {
+    "generated": "2026-02-03",
+    "projectName": "Cultivation-Calculator",
+    "type": "NextJS Web App",
+    "description": "修仙世界观量化计算器"
+  },
+  "structure": {
+    "app": {
+      "layout.tsx": "Root layout with metadata",
+      "page.tsx": "Home page - mounts CultivationCalculator",
+      "globals.css": "Global styles"
+    },
+    "components": {
+      "CultivationCalculator.tsx": "Main calculator component (395 lines)",
+      "ParameterPanel.tsx": "Parameter input controls",
+      "RealmTable.tsx": "Results table display",
+      "AlertList.tsx": "Alert/warning display",
+      "CollapsibleSection.tsx": "Collapsible UI sections",
+      "SchemeManager.tsx": "Save/load scheme management"
+    },
+    "lib": {
+      "types/index.ts": "TypeScript type definitions (171 lines)",
+      "calculator/core.ts": "Calculation engine - pure functions (363 lines)",
+      "data/realms.ts": "9 cultivation realm configs (133 lines)",
+      "data/presets.ts": "4 preset schemes (138 lines)",
+      "storage/schemes.ts": "localStorage persistence (143 lines)"
+    }
+  },
+  "entryPoints": [
+    { "name": "Home", "path": "app/page.tsx", "description": "Main entry point" },
+    { "name": "Layout", "path": "app/layout.tsx", "description": "Root HTML structure" },
+    { "name": "Calculator", "path": "components/CultivationCalculator.tsx", "description": "Core UI component" },
+    { "name": "Engine", "path": "lib/calculator/core.ts", "description": "Calculation logic" }
+  ],
+  "modules": [
+    {
+      "name": "types",
+      "path": "lib/types/index.ts",
+      "exports": [
+        "ResourceGrade",
+        "ResourceType",
+        "SubLevelName",
+        "AlertType",
+        "AlertSeverity",
+        "SubLevelConfig",
+        "RealmConfig",
+        "CalculationParams",
+        "ResourceConfig",
+        "SubLevelResult",
+        "RealmSummary",
+        "Alert",
+        "CalculationResult",
+        "PresetConfig",
+        "SavedScheme",
+        "ComparisonItem",
+        "ColorTheme"
+      ]
+    },
+    {
+      "name": "calculator/core",
+      "path": "lib/calculator/core.ts",
+      "exports": [
+        "calculateAll",
+        "calculateSubLevelCost",
+        "calculateEfficiencyFactor",
+        "calculateDuration",
+        "calculateResourceProduction",
+        "formatSpiritStones",
+        "formatDuration",
+        "validateParams"
+      ]
+    },
+    {
+      "name": "data/realms",
+      "path": "lib/data/realms.ts",
+      "exports": [
+        "REALM_CONFIGS",
+        "REALM_COUNT",
+        "getRealmConfig",
+        "getRealmName",
+        "getRealmLifespan",
+        "getSubLevelCount"
+      ],
+      "realms": ["炼气", "筑基", "金丹", "元婴", "化神", "炼虚", "合体", "大乘", "渡劫"]
+    },
+    {
+      "name": "data/presets",
+      "path": "lib/data/presets.ts",
+      "exports": [
+        "MORTAL_PRESET",
+        "HIGH_MARTIAL_PRESET",
+        "FAST_CULTIVATION_PRESET",
+        "HARD_MODE_PRESET",
+        "PRESETS",
+        "PRESET_OPTIONS"
+      ]
+    },
+    {
+      "name": "storage/schemes",
+      "path": "lib/storage/schemes.ts",
+      "exports": [
+        "getAllSchemes",
+        "saveScheme",
+        "updateScheme",
+        "deleteScheme",
+        "getScheme",
+        "clearAllSchemes",
+        "exportScheme",
+        "importScheme"
+      ]
+    }
+  ],
+  "dependencies": {
+    "runtime": {
+      "next": "^15.1.3",
+      "react": "^19.0.0",
+      "react-dom": "^19.0.0"
+    },
+    "dev": {
+      "tailwindcss": "^4.1.18",
+      "typescript": "^5",
+      "eslint": "^9",
+      "@tailwindcss/postcss": "^4.1.18"
+    }
+  },
+  "scripts": {
+    "dev": "Start development server",
+    "build": "Build for production",
+    "start": "Start production server",
+    "lint": "Run ESLint"
+  },
+  "calculationLogic": {
+    "costFormula": "首境=baseCost; 首境后续=baseCost×smallMultiplier^(i-1); 跨大境界=前境界最后×largeMultiplier",
+    "durationFormula": "cost / (100 × efficiencyFactor)",
+    "alerts": ["lifespan", "resource", "exponential"],
+    "realms": 9,
+    "qiCondensationLayers": "configurable (3-20)"
+  }
+}
