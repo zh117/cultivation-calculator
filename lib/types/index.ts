@@ -59,7 +59,7 @@ export interface RealmConfig {
 
 /**
  * 修炼参数（转换率维度 - 影响灵石消耗）
- * 值越高，消耗越少（天赋越高，需要的灵石越少）
+ * 值越低，消耗越少（功法品质和灵根系数都是越小越好）
  */
 export interface CultivationParams {
   // 基础参数
@@ -67,10 +67,9 @@ export interface CultivationParams {
   smallRealmMultiplier: number;
   largeRealmMultiplier: number;
   qiCondensationLayers: number;
+  baseAbsorptionRate: number; // 吸收一颗下品灵石需要的时辰数
 
   // 转换率系数（影响 cost）
-  talent: number;           // 天赋（1.0=标准，2.0=天才消耗减半）
-  comprehension: number;    // 悟性（影响功法发挥）
   techniqueQuality: number; // 功法品质
   spiritualRootType: SpiritualRootType; // 灵根类型
 }
@@ -80,6 +79,7 @@ export interface CultivationParams {
  * 值越高，吸收越快
  */
 export interface AbsorptionParams {
+  comprehension: number;  // 悟性（影响吸收速度）
   physiqueFactor: number;   // 体质（影响吸收速度）
   environmentFactor: number;// 环境（灵气浓度）
   retreatFactor: number;    // 闭关（专注度）

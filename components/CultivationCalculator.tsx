@@ -135,6 +135,7 @@ export function CultivationCalculator() {
   // 计算吸收效率系数（影响修炼时长）
   const absorptionRate = useMemo(() => {
     return (
+      params.comprehension *
       params.physiqueFactor *
       params.environmentFactor *
       params.retreatFactor *
@@ -224,16 +225,17 @@ export function CultivationCalculator() {
 
       {/* 主内容区 */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* 左侧：参数面板 */}
-          <div className="xl:col-span-4 xl:sticky xl:top-12 xl:self-start">
-            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
-                <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
-                  参数设置
-                </h2>
-              </div>
-              <div className="p-4">
+          <div className="lg:col-span-4">
+            <div className="sticky top-16 h-[calc(100vh-8rem)]">
+              <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 h-full flex flex-col overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 shrink-0">
+                  <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                    参数设置
+                  </h2>
+                </div>
+                <div className="p-4 overflow-y-auto flex-1">
                 <ParameterPanel
                   params={params}
                   resource={resource}
@@ -251,7 +253,7 @@ export function CultivationCalculator() {
                       {conversionRate}x
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                      天赋 × 悟性 × 功法 ÷ 灵根系数
+                      功法 ÷ 灵根系数
                     </div>
                   </div>
                   <div className="p-3 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/30">
@@ -262,16 +264,17 @@ export function CultivationCalculator() {
                       {absorptionRate}x
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                      体质 × 环境 × 闭关 × 顿悟
+                      悟性 × 体质 × 环境 × 闭关 × 顿悟
                     </div>
                   </div>
+                </div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* 右侧：结果面板 */}
-          <div className="xl:col-span-8 space-y-5">
+          <div className="lg:col-span-8 space-y-5">
             {/* 参数错误提示 */}
             {paramErrors.length > 0 && (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
@@ -357,7 +360,7 @@ export function CultivationCalculator() {
                 </CollapsibleSection>
 
                 {/* 资源自给率 */}
-                <CollapsibleSection title="资源供给分析" defaultOpen={false}>
+                <CollapsibleSection title="资源供给分析" defaultOpen={true}>
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
@@ -427,14 +430,6 @@ export function CultivationCalculator() {
           </div>
         </div>
       </main>
-
-      {/* 页脚 */}
-      <footer className="mt-12 py-6 border-t border-gray-200 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 text-center text-sm text-gray-500 dark:text-gray-400">
-          <p>修仙世界观量化计算器 | 基于凡人流数值体系设计</p>
-          <p className="mt-1">用于检测修仙小说世界观数值的自洽性和崩坏风险</p>
-        </div>
-      </footer>
 
       {/* 预设详情面板 */}
       {showPresetDetail && (

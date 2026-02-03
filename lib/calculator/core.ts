@@ -3,14 +3,14 @@
 // ============================================================================
 
 import type { CalculationParams, CultivationParams, AbsorptionParams, ResourceConfig, CalculationResult, SubLevelResult, RealmSummary, Alert, DurationResult } from '@/lib/types';
-import { REALM_CONFIGS } from '@/lib/data/realms';
+import { getRealmConfigs } from '@/lib/data/realms';
 
 // ============================================================================
 // 常量
 // ============================================================================
 
-/** 基础吸收速度（下品灵石/年） */
-const BASE_ABSORPTION_RATE = 100;
+/** 默认吸收一颗灵石需要的时辰数 */
+const DEFAULT_HOURS_PER_STONE = 12;
 
 /** 灵根系数映射表
  * 废灵根（五灵根）: 1.0
@@ -50,17 +50,16 @@ const BASE_PRODUCTION_PER_LEVEL = 100;
 
 /**
  * 计算转换率系数（影响资源消耗）
- * 值越高，消耗越少（天赋越高，需要的灵石越少）
+ * 值越低，消耗越少（功法品质和灵根系数都是越小越好）
  */
 export function calculateConversionRate(params: CultivationParams): number {
-  const talent = params.talent ?? 1.0;
-  const comprehension = params.comprehension ?? 1.0;
   const technique = params.techniqueQuality ?? 1.0;
   const spiritualRootType = params.spiritualRootType ?? 'waste';
   const spiritualRootCoeff = SPIRITUAL_ROOT_COEFFICIENTS[spiritualRootType] ?? 1.0;
-  // 转换率越高，实际消耗越少：rawCost / conversionRate
-  // 灵根系数越小，转换率越高（天灵根0.3的系数会让消耗更少）
-  return (talent * comprehension * technique) / spiritualRootCoeff;
+  // 转换率越低，实际消耗越少：rawCost * conversionRate
+  // 例如：天灵根(0.3) + 天阶(0.22) = 0.066，消耗 = rawCost * 0.066（最小）
+  //      废灵根(1.0) + 黄阶(0.99) = 0.99，消耗 = rawCost * 0.99（最大）
+  return technique * spiritualRootCoeff;
 }
 
 /**
@@ -68,11 +67,12 @@ export function calculateConversionRate(params: CultivationParams): number {
  * 值越高，吸收越快
  */
 export function calculateAbsorptionRate(params: AbsorptionParams): number {
+  const comprehension = params.comprehension ?? 1.0;
   const physique = params.physiqueFactor ?? 1.0;
   const environment = params.environmentFactor ?? 1.0;
   const retreat = params.retreatFactor ?? 1.0;
   const epiphany = params.epiphanyFactor ?? 1.0;
-  return physique * environment * retreat * epiphany;
+  return comprehension * physique * environment * retreat * epiphany;
 }
 
 // ============================================================================
@@ -94,7 +94,7 @@ export function calculateAbsorptionRate(params: AbsorptionParams): number {
  * @param realmIndex - 境界索引（0开始）
  * @param subLevelIndex - 小境界索引（0开始）
  * @param qiCondensationLayers - 炼气层数
- * @param conversionRate - 转换率系数（值越高，消耗越少）
+ * @param conversionRate - 转换率系数（值越低，消耗越少）
  * @returns 资源消耗（下品灵石）
  */
 export function calculateSubLevelCost(
@@ -111,12 +111,12 @@ export function calculateSubLevelCost(
 
   // 首境第一个小境界
   if (realmIndex === 0 && subLevelIndex === 0) {
-    return baseCost / conversionRate;
+    return baseCost * conversionRate;
   }
 
   // 首境后续小境界
   if (realmIndex === 0) {
-    return (baseCost * Math.pow(smallMultiplier, subLevelIndex)) / conversionRate;
+    return (baseCost * Math.pow(smallMultiplier, subLevelIndex)) * conversionRate;
   }
 
   // 计算首境最后一个小境界的消耗
@@ -127,23 +127,31 @@ export function calculateSubLevelCost(
 
   // 本大境界第一个小境界
   if (subLevelIndex === 0) {
-    return (realmBaseCost * largeMultiplier) / conversionRate;
+    return (realmBaseCost * largeMultiplier) * conversionRate;
   }
 
   // 本大境界后续小境界
-  return (realmBaseCost * largeMultiplier * Math.pow(smallMultiplier, subLevelIndex)) / conversionRate;
+  return (realmBaseCost * largeMultiplier * Math.pow(smallMultiplier, subLevelIndex)) * conversionRate;
 }
 
 /**
  * 计算两种时长（理论时长 vs 资源限制时长）
+ * @param hoursPerStone - 吸收一颗灵石需要的时辰数（默认12时辰）
  */
 export function calculateDualDuration(
   cost: number,
   absorptionRate: number,
-  resourceProduction: number
+  resourceProduction: number,
+  hoursPerStone: number = DEFAULT_HOURS_PER_STONE
 ): DurationResult {
+  // 默认值处理（兼容旧数据）
+  const safeHoursPerStone = hoursPerStone ?? DEFAULT_HOURS_PER_STONE;
+  // 每年时辰数（修仙设定：1天=12时辰，1年=365天）
+  const HOURS_PER_YEAR = 12 * 365;
+  // 年吸收速度 = 每年时辰数 / 吸收一颗灵石需要的时辰
+  const stonesPerYear = HOURS_PER_YEAR / safeHoursPerStone;
   // 理论时长：纯吸收能力，不考虑资源限制
-  const effectiveAbsorptionRate = BASE_ABSORPTION_RATE * absorptionRate;
+  const effectiveAbsorptionRate = stonesPerYear * absorptionRate;
   const theoreticalDuration = cost / effectiveAbsorptionRate;
 
   // 资源限制时长：受灵脉产量限制
@@ -165,9 +173,12 @@ export function calculateDualDuration(
  */
 export function calculateDuration(
   cost: number,
-  efficiencyFactor: number
+  efficiencyFactor: number,
+  hoursPerStone: number = DEFAULT_HOURS_PER_STONE
 ): number {
-  const effectiveRate = BASE_ABSORPTION_RATE * efficiencyFactor;
+  const HOURS_PER_YEAR = 12 * 365;
+  const stonesPerYear = HOURS_PER_YEAR / hoursPerStone;
+  const effectiveRate = stonesPerYear * efficiencyFactor;
   return cost / effectiveRate;
 }
 
@@ -202,12 +213,21 @@ export function formatSpiritStones(amount: number): string {
 
 /**
  * 格式化时长
+ * - 小于1年：显示天数（精确到0.1天）
+ * - 1-10000年：显示"X年X天"（天数四舍五入）
+ * - 超过10000年：显示"X.XX万年"（保留两位小数）
  */
 export function formatDuration(years: number): string {
   if (years >= 10000) return `${(years / 10000).toFixed(2)}万年`;
-  if (years >= 100) return `${(years / 100).toFixed(2)}世纪`;
-  if (years >= 1) return `${years.toFixed(2)}年`;
-  return `${(years * 12).toFixed(1)}月`;
+  if (years >= 1) {
+    const fullYears = Math.floor(years);
+    const days = Math.round((years - fullYears) * 365);
+    if (days === 0) return `${fullYears}年`;
+    return `${fullYears}年${days}天`;
+  }
+  // 小于1年，显示天数（精确到0.1天）
+  const days = years * 365;
+  return `${days.toFixed(1)}天`;
 }
 
 // ============================================================================
@@ -230,6 +250,9 @@ export function calculateAll(
   let cumulativeResourceDuration = 0;
   let maxSingleCost = 0;
   let maxRealmReached = '';
+
+  // 根据炼气层数获取动态境界配置
+  const REALM_CONFIGS = getRealmConfigs(params.qiCondensationLayers);
 
   // 计算转换率和吸收率
   const conversionRate = calculateConversionRate(params);
@@ -275,7 +298,7 @@ export function calculateAll(
       realmTotalCost += cost;
 
       // 计算两种时长
-      const durationResult = calculateDualDuration(cost, absorptionRate, maxProduction);
+      const durationResult = calculateDualDuration(cost, absorptionRate, maxProduction, params.baseAbsorptionRate);
 
       cumulativeTheoreticalDuration += durationResult.theoreticalDuration;
       cumulativeResourceDuration += durationResult.resourceLimitedDuration;
@@ -441,20 +464,20 @@ export function validateParams(params: CalculationParams): string[] {
     errors.push('炼气层数应在3-20之间');
   }
 
-  // 转换率参数
-  if (params.talent < 0.1 || params.talent > 10) {
-    errors.push('天赋应在0.1-10之间');
+  if (params.baseAbsorptionRate < 1 || params.baseAbsorptionRate > 24) {
+    errors.push('吸收一颗灵石所需时辰应在1-24之间');
   }
 
+  // 转换率参数
+  if (params.techniqueQuality < 0.1 || params.techniqueQuality > 1) {
+    errors.push('功法品质系数应在0.1-1之间');
+  }
+
+  // 吸收效率参数
   if (params.comprehension < 0.1 || params.comprehension > 10) {
     errors.push('悟性应在0.1-10之间');
   }
 
-  if (params.techniqueQuality < 0.1 || params.techniqueQuality > 10) {
-    errors.push('功法品质应在0.1-10之间');
-  }
-
-  // 吸收效率参数
   if (params.physiqueFactor < 0.1 || params.physiqueFactor > 10) {
     errors.push('体系数应在0.1-10之间');
   }

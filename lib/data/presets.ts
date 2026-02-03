@@ -18,10 +18,10 @@ export const MORTAL_PRESET: PresetConfig = {
     smallRealmMultiplier: 2,
     largeRealmMultiplier: 10,
     qiCondensationLayers: 12,
+    baseAbsorptionRate: 12, // 吸收一颗灵石需要12时辰，年吸收365颗
     // 转换率参数（影响消耗）
-    talent: 1.0,
     comprehension: 1.0,
-    techniqueQuality: 1.0,
+    techniqueQuality: 0.97, // 黄阶中
     spiritualRootType: 'waste', // 废灵根（五灵根）
     // 吸收效率参数（影响时长）
     physiqueFactor: 1.0,
@@ -52,10 +52,10 @@ export const GENIUS_PRESET: PresetConfig = {
     smallRealmMultiplier: 2,
     largeRealmMultiplier: 10,
     qiCondensationLayers: 12,
+    baseAbsorptionRate: 6, // 吸收一颗灵石需要6时辰，年吸收730颗
     // 转换率参数（影响消耗）
-    talent: 2.0,           // 天才，消耗减半
     comprehension: 1.5,
-    techniqueQuality: 1.5, // 灵品功法
+    techniqueQuality: 0.79, // 玄阶上
     spiritualRootType: 'heavenly', // 天灵根（单灵根）
     // 吸收效率参数（影响时长）
     physiqueFactor: 2.0,   // 天灵根，吸收也快
@@ -86,10 +86,10 @@ export const HIGH_MARTIAL_PRESET: PresetConfig = {
     smallRealmMultiplier: 1.5,
     largeRealmMultiplier: 5,
     qiCondensationLayers: 9,
+    baseAbsorptionRate: 6, // 吸收一颗灵石需要6时辰，年吸收730颗
     // 转换率参数（影响消耗）
-    talent: 1.5,
     comprehension: 1.2,
-    techniqueQuality: 1.2,
+    techniqueQuality: 0.85, // 玄阶中
     spiritualRootType: 'dual', // 双灵根
     // 吸收效率参数（影响时长）
     physiqueFactor: 1.2,
@@ -120,10 +120,10 @@ export const TYCOON_PRESET: PresetConfig = {
     smallRealmMultiplier: 2,
     largeRealmMultiplier: 10,
     qiCondensationLayers: 12,
+    baseAbsorptionRate: 8, // 吸收一颗灵石需要8时辰，年吸收547颗
     // 转换率参数（影响消耗）
-    talent: 1.0,
     comprehension: 1.0,
-    techniqueQuality: 2.0, // 灵品上阶
+    techniqueQuality: 0.72, // 地阶下
     spiritualRootType: 'triple', // 三灵根
     // 吸收效率参数（影响时长）
     physiqueFactor: 1.0,
@@ -154,10 +154,10 @@ export const FAST_CULTIVATION_PRESET: PresetConfig = {
     smallRealmMultiplier: 1.2,
     largeRealmMultiplier: 3,
     qiCondensationLayers: 9,
+    baseAbsorptionRate: 4, // 吸收一颗灵石需要4时辰，年吸收1095颗
     // 转换率参数（影响消耗）
-    talent: 2.0,
     comprehension: 2.0,
-    techniqueQuality: 2.0,
+    techniqueQuality: 0.90, // 玄阶下
     spiritualRootType: 'dual', // 双灵根
     // 吸收效率参数（影响时长）
     physiqueFactor: 1.5,
@@ -188,10 +188,10 @@ export const HARD_MODE_PRESET: PresetConfig = {
     smallRealmMultiplier: 2.5,
     largeRealmMultiplier: 15,
     qiCondensationLayers: 15,
+    baseAbsorptionRate: 18, // 吸收一颗灵石需要18时辰，年吸收243颗
     // 转换率参数（影响消耗）
-    talent: 0.8,           // 天赋一般
     comprehension: 0.8,
-    techniqueQuality: 0.8,
+    techniqueQuality: 0.99, // 黄阶下
     spiritualRootType: 'waste', // 废灵根（五灵根）
     // 吸收效率参数（影响时长）
     physiqueFactor: 0.8,

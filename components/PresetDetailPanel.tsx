@@ -20,19 +20,33 @@ const TypeLabels: Record<string, string> = {
   plant: '灵植物',
 };
 
+const SPIRITUAL_ROOT_LABELS: Record<string, string> = {
+  waste: '废灵根（五灵根）',
+  mixed: '杂灵根（四灵根）',
+  triple: '三灵根',
+  dual: '双灵根',
+  heavenly: '天灵根（单灵根）',
+};
+
 export function PresetDetailPanel({ presetId, onClose }: PresetDetailPanelProps) {
   const preset = PRESETS[presetId];
 
   if (!preset) return null;
 
-  // 计算转换率（影响灵石消耗）
-  const conversionRate =
-    preset.params.talent *
-    preset.params.comprehension *
-    preset.params.techniqueQuality;
+  // 计算转换率（影响灵石消耗）= 功法品质 × 灵根系数
+  const SPIRITUAL_ROOT_COEFFICIENTS: Record<string, number> = {
+    waste: 1.0,      // 废灵根（五灵根）
+    mixed: 0.9,      // 杂灵根（四灵根）
+    triple: 0.8,     // 三灵根
+    dual: 0.6,       // 双灵根
+    heavenly: 0.3,   // 天灵根（单灵根）
+  };
+  const spiritualRootCoeff = SPIRITUAL_ROOT_COEFFICIENTS[preset.params.spiritualRootType ?? 'waste'] ?? 1.0;
+  const conversionRate = preset.params.techniqueQuality * spiritualRootCoeff;
 
   // 计算吸收效率（影响修炼时长）
   const absorptionRate =
+    preset.params.comprehension *
     preset.params.physiqueFactor *
     preset.params.environmentFactor *
     preset.params.retreatFactor *
@@ -92,12 +106,19 @@ export function PresetDetailPanel({ presetId, onClose }: PresetDetailPanelProps)
               转换率（影响灵石消耗）
             </h4>
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-              值越高，突破需要的灵石越少
+              值越低，突破需要的灵石越少（功法品质和灵根系数都是越小越好）
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <ParamRow label="天赋" value={preset.params.talent} description="天赋越高，消耗越少" />
-              <ParamRow label="悟性" value={preset.params.comprehension} description="影响功法发挥" />
               <ParamRow label="功法品质" value={preset.params.techniqueQuality} description="修炼功法的品质加成" />
+              <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">灵根类型</div>
+                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {SPIRITUAL_ROOT_LABELS[preset.params.spiritualRootType ?? 'waste'] || '未知'}
+                </div>
+                <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                  系数 {spiritualRootCoeff.toFixed(2)}
+                </div>
+              </div>
             </div>
 
             {/* 转换率总览 */}
@@ -107,7 +128,7 @@ export function PresetDetailPanel({ presetId, onClose }: PresetDetailPanelProps)
                 {conversionRate.toFixed(2)}x
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-500 mt-1.5">
-                {preset.params.talent.toFixed(1)} × {preset.params.comprehension.toFixed(1)} × {preset.params.techniqueQuality.toFixed(1)}
+                功法品质 × 灵根系数
               </div>
             </div>
           </section>
@@ -122,6 +143,7 @@ export function PresetDetailPanel({ presetId, onClose }: PresetDetailPanelProps)
               值越高，吸收灵石的速度越快
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <ParamRow label="悟性" value={preset.params.comprehension} description="理解功法的能力" />
               <ParamRow label="体质血脉" value={preset.params.physiqueFactor} description="主角体质的优势" />
               <ParamRow label="修炼环境" value={preset.params.environmentFactor} description="修炼环境的影响" />
               <ParamRow label="闭关加成" value={preset.params.retreatFactor} description="闭关修炼的效率提升" />
@@ -135,7 +157,7 @@ export function PresetDetailPanel({ presetId, onClose }: PresetDetailPanelProps)
                 {absorptionRate.toFixed(2)}x
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-500 mt-1.5">
-                {preset.params.physiqueFactor.toFixed(1)} × {preset.params.environmentFactor.toFixed(1)} × {preset.params.retreatFactor.toFixed(1)} × {preset.params.epiphanyFactor.toFixed(1)}
+                {preset.params.comprehension.toFixed(1)} × {preset.params.physiqueFactor.toFixed(1)} × {preset.params.environmentFactor.toFixed(1)} × {preset.params.retreatFactor.toFixed(1)} × {preset.params.epiphanyFactor.toFixed(1)}
               </div>
             </div>
           </section>
@@ -257,10 +279,11 @@ function PresetComparison({ currentPresetId }: { currentPresetId: string }) {
       label: '转换率',
       key: 'conversionRate',
       format: (_v: number, preset: PresetConfig) => {
-        const total =
-          preset.params.talent *
-          preset.params.comprehension *
-          preset.params.techniqueQuality;
+        const SPIRITUAL_ROOT_COEFFICIENTS: Record<string, number> = {
+          waste: 1.0, mixed: 0.9, triple: 0.8, dual: 0.6, heavenly: 0.3,
+        };
+        const spiritualRootCoeff = SPIRITUAL_ROOT_COEFFICIENTS[preset.params.spiritualRootType ?? 'waste'] ?? 1.0;
+        const total = preset.params.techniqueQuality * spiritualRootCoeff;
         return total.toFixed(2);
       },
       needsPreset: true,
@@ -270,6 +293,7 @@ function PresetComparison({ currentPresetId }: { currentPresetId: string }) {
       key: 'absorptionRate',
       format: (_v: number, preset: PresetConfig) => {
         const total =
+          preset.params.comprehension *
           preset.params.physiqueFactor *
           preset.params.environmentFactor *
           preset.params.retreatFactor *
