@@ -285,11 +285,13 @@ export function ParameterPanel({
     { value: 24, label: '极慢', color: 'text-red-600' },
   ];
 
+  // 计算各品阶倍率
+  const gradeMultiplier = params.mediumGradeMultiplier ?? 100;
   const gradeOptions = [
     { value: 'inferior', label: '下品', color: 'text-gray-600', multiplier: '×1' },
-    { value: 'medium', label: '中品', color: 'text-green-600', multiplier: params.mediumGradeMultiplier ? `×${params.mediumGradeMultiplier}` : '×100' },
-    { value: 'superior', label: '上品', color: 'text-blue-600', multiplier: '×10K' },
-    { value: 'extreme', label: '极品', color: 'text-purple-600', multiplier: '×1M' },
+    { value: 'medium', label: '中品', color: 'text-green-600', multiplier: `×${gradeMultiplier.toLocaleString()}` },
+    { value: 'superior', label: '上品', color: 'text-blue-600', multiplier: `×${(gradeMultiplier * gradeMultiplier).toLocaleString()}` },
+    { value: 'extreme', label: '极品', color: 'text-purple-600', multiplier: `×${(gradeMultiplier * gradeMultiplier * gradeMultiplier).toLocaleString()}` },
   ];
 
   return (
@@ -708,10 +710,9 @@ export function ParameterPanel({
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-700 dark:text-white">
                 灵脉进位倍率
-                <span className="text-xs text-gray-400 ml-1">（下品→中品）</span>
               </span>
               <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">
-                {params.mediumGradeMultiplier || 100}x
+                {gradeMultiplier}x
               </span>
             </div>
             <input
@@ -719,16 +720,16 @@ export function ParameterPanel({
               min="1"
               max="999"
               step="1"
-              value={params.mediumGradeMultiplier || 100}
-              onChange={e => {
-                const val = Number(e.target.value);
-                updateParam('mediumGradeMultiplier', val === 100 ? undefined : val);
-              }}
+              value={gradeMultiplier}
+              onChange={e => updateParam('mediumGradeMultiplier', Number(e.target.value))}
               className="w-full h-2 bg-purple-200 dark:bg-purple-800 rounded-lg appearance-none cursor-pointer accent-purple-600"
             />
-            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">
-              中品灵石=下品×{params.mediumGradeMultiplier || 100}，可调整此倍率
-            </p>
+            <div className="flex justify-between mt-1 px-0.5 text-[10px] text-gray-500">
+              <span>1x</span>
+              <span>中品×{gradeMultiplier}</span>
+              <span>上品×{(gradeMultiplier * gradeMultiplier).toLocaleString()}</span>
+              <span>极品×{(gradeMultiplier ** 3).toLocaleString()}</span>
+            </div>
           </div>
 
           {/* 灵矿配置 */}

@@ -76,8 +76,8 @@ export interface CultivationParams {
   // 新增：筑基独立倍率
   foundationBuildingMultiplier?: number; // 筑基跨境界倍率（独立于 largeRealmMultiplier）
 
-  // 新增：灵脉进位倍率
-  mediumGradeMultiplier?: number; // 中品灵石的进位倍率（默认100）
+  // 灵脉进位倍率（统一参数，影响所有品阶进位）
+  mediumGradeMultiplier?: number; // 进位倍率（默认100）：中品=下品×N，上品=中品×N，极品=上品×N
 }
 
 /**

@@ -214,19 +214,27 @@ export function calculateEfficiencyFactor(params: CalculationParams): number {
 
 /**
  * 计算资源年产出
+ * @param type - 资源类型（mine/plant）
+ * @param grade - 品阶（inferior/medium/superior/extreme）
+ * @param level - 灵脉等级（1-9）
+ * @param gradeMultiplier - 进位倍率（默认100），影响所有品阶：中品=下品×N，上品=中品×N，极品=上品×N
  */
 export function calculateResourceProduction(
   type: 'mine' | 'plant',
   grade: string,
   level: number,
-  mediumGradeMultiplier?: number
+  gradeMultiplier?: number
 ): number {
-  const gradeMultipliers = mediumGradeMultiplier
-    ? { ...DEFAULT_GRADE_MULTIPLIERS, medium: mediumGradeMultiplier }
-    : DEFAULT_GRADE_MULTIPLIERS;
-  const gradeMultiplier = gradeMultipliers[grade as keyof typeof gradeMultipliers] || 1;
+  const multiplier = gradeMultiplier ?? 100;
+  const multipliers: Record<string, number> = {
+    inferior: 1,
+    medium: multiplier,
+    superior: multiplier * multiplier,
+    extreme: multiplier * multiplier * multiplier,
+  };
+  const gradeValue = multipliers[grade as keyof typeof multipliers] || 1;
   const typeMultiplier = RESOURCE_TYPE_MULTIPLIERS[type] || 1;
-  return BASE_PRODUCTION_PER_LEVEL * level * gradeMultiplier * typeMultiplier;
+  return BASE_PRODUCTION_PER_LEVEL * level * gradeValue * typeMultiplier;
 }
 
 /**
@@ -527,7 +535,7 @@ export function validateParams(params: CalculationParams): string[] {
   // 灵脉进位倍率可选
   if (params.mediumGradeMultiplier !== undefined) {
     if (params.mediumGradeMultiplier < 1 || params.mediumGradeMultiplier > 999) {
-      errors.push('中品进位倍率应在1-999之间');
+      errors.push('进位倍率应在1-999之间');
     }
   }
 
