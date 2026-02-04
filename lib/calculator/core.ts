@@ -2,7 +2,7 @@
 // 核心计算函数（纯函数）
 // ============================================================================
 
-import type { CalculationParams, CultivationParams, AbsorptionParams, ResourceConfig, CalculationResult, SubLevelResult, RealmSummary, Alert, DurationResult } from '@/lib/types';
+import type { CalculationParams, CultivationParams, AbsorptionParams, ResourceConfig, CalculationResult, SubLevelResult, RealmSummary, Alert, DurationResult, CoefficientOverrides, CalculationDisplay } from '@/lib/types';
 import { getRealmConfigs } from '@/lib/data/realms';
 
 // ============================================================================
@@ -12,23 +12,23 @@ import { getRealmConfigs } from '@/lib/data/realms';
 /** 默认吸收一颗灵石需要的时辰数 */
 const DEFAULT_HOURS_PER_STONE = 12;
 
-/** 灵根系数映射表
+/** 灵根系数映射表（新体系：值越大越好）
  * 废灵根（五灵根）: 1.0
- * 杂灵根（四灵根）: 0.9
- * 三灵根: 0.8
- * 双灵根: 0.6
- * 天灵根（单灵根）: 0.3
+ * 杂灵根（四灵根）: 1.11
+ * 三灵根: 1.25
+ * 双灵根: 1.67
+ * 天灵根（单灵根）: 3.33
  */
 const SPIRITUAL_ROOT_COEFFICIENTS: Record<string, number> = {
   waste: 1.0,      // 废灵根（五灵根）
-  mixed: 0.9,      // 杂灵根（四灵根）
-  triple: 0.8,     // 三灵根
-  dual: 0.6,       // 双灵根
-  heavenly: 0.3,   // 天灵根（单灵根）
+  mixed: 1.11,     // 杂灵根（四灵根）= 1/0.9
+  triple: 1.25,    // 三灵根 = 1/0.8
+  dual: 1.67,      // 双灵根 = 1/0.6
+  heavenly: 3.33,  // 天灵根（单灵根）= 1/0.3
 };
 
-/** 资源档位倍率 */
-const GRADE_MULTIPLIERS: Record<string, number> = {
+/** 默认资源档位倍率 */
+const DEFAULT_GRADE_MULTIPLIERS: Record<string, number> = {
   inferior: 1,
   medium: 100,
   superior: 10000,
@@ -50,15 +50,17 @@ const BASE_PRODUCTION_PER_LEVEL = 100;
 
 /**
  * 计算转换率系数（影响资源消耗）
- * 值越低，消耗越少（功法品质和灵根系数都是越小越好）
+ * 新体系：值越大，消耗越少（公式反转：cost = rawCost / conversionRate）
+ * 例如：天灵根(3.33) + 天阶(4.55) = 15.15，消耗 = rawCost / 15.15（最小）
+ *      废灵根(1.0) + 黄阶(1.03) = 1.03，消耗 = rawCost / 1.03（最大）
  */
-export function calculateConversionRate(params: CultivationParams): number {
-  const technique = params.techniqueQuality ?? 1.0;
+export function calculateConversionRate(params: CultivationParams, overrides?: CoefficientOverrides): number {
+  // 优先使用覆盖值
+  const technique = overrides?.techniqueQuality ?? params.techniqueQuality ?? 1.0;
   const spiritualRootType = params.spiritualRootType ?? 'waste';
-  const spiritualRootCoeff = SPIRITUAL_ROOT_COEFFICIENTS[spiritualRootType] ?? 1.0;
-  // 转换率越低，实际消耗越少：rawCost * conversionRate
-  // 例如：天灵根(0.3) + 天阶(0.22) = 0.066，消耗 = rawCost * 0.066（最小）
-  //      废灵根(1.0) + 黄阶(0.99) = 0.99，消耗 = rawCost * 0.99（最大）
+  const spiritualRootCoeff = overrides?.spiritualRootCoeff ?? SPIRITUAL_ROOT_COEFFICIENTS[spiritualRootType] ?? 1.0;
+
+  // 新公式：值越大，转换率越高，消耗越少
   return technique * spiritualRootCoeff;
 }
 
@@ -66,13 +68,22 @@ export function calculateConversionRate(params: CultivationParams): number {
  * 计算吸收效率系数（影响吸收速度）
  * 值越高，吸收越快
  */
-export function calculateAbsorptionRate(params: AbsorptionParams): number {
-  const comprehension = params.comprehension ?? 1.0;
-  const physique = params.physiqueFactor ?? 1.0;
-  const environment = params.environmentFactor ?? 1.0;
-  const retreat = params.retreatFactor ?? 1.0;
-  const epiphany = params.epiphanyFactor ?? 1.0;
+export function calculateAbsorptionRate(params: AbsorptionParams, overrides?: CoefficientOverrides): number {
+  const comprehension = overrides?.comprehension ?? params.comprehension ?? 1.0;
+  const physique = overrides?.physiqueFactor ?? params.physiqueFactor ?? 1.0;
+  const environment = overrides?.environmentFactor ?? params.environmentFactor ?? 1.0;
+  const retreat = overrides?.retreatFactor ?? params.retreatFactor ?? 1.0;
+  const epiphany = overrides?.epiphanyFactor ?? params.epiphanyFactor ?? 1.0;
   return comprehension * physique * environment * retreat * epiphany;
+}
+
+/**
+ * 获取计算结果显示（用于标题展示）
+ */
+export function getCalculationDisplay(params: CalculationParams, overrides?: CoefficientOverrides): CalculationDisplay {
+  const conversionRate = calculateConversionRate(params, overrides);
+  const absorptionRate = calculateAbsorptionRate(params, overrides);
+  return { conversionRate, absorptionRate };
 }
 
 // ============================================================================
@@ -82,25 +93,27 @@ export function calculateAbsorptionRate(params: AbsorptionParams): number {
 /**
  * 计算小境界的资源消耗
  *
- * 公式：
- * - 首境（炼气1→2）= baseCost
- * - 首境后续小境界 = baseCost × smallRealmMultiplier^(subLevelIndex - 1)
- * - 跨大境界 = 前境界最后小境界消耗 × largeRealmMultiplier
+ * 公式（新体系）：
+ * - 首境（炼气1→2）= baseCost / conversionRate
+ * - 首境后续小境界 = baseCost × smallRealmMultiplier^(subLevelIndex - 1) / conversionRate
+ * - 跨大境界 = 前境界最后小境界消耗 × largeRealmMultiplier（或筑基倍率）
  * - 新大境界小境界 = 跨大境界消耗 × smallRealmMultiplier^subLevelIndex
  *
  * @param baseCost - 基数
  * @param smallMultiplier - 小境界系数
  * @param largeMultiplier - 大境界系数
+ * @param foundationMultiplier - 筑基独立倍率（可选）
  * @param realmIndex - 境界索引（0开始）
  * @param subLevelIndex - 小境界索引（0开始）
  * @param qiCondensationLayers - 炼气层数
- * @param conversionRate - 转换率系数（值越低，消耗越少）
+ * @param conversionRate - 转换率系数（值越大，消耗越少）
  * @returns 资源消耗（下品灵石）
  */
 export function calculateSubLevelCost(
   baseCost: number,
   smallMultiplier: number,
   largeMultiplier: number,
+  foundationMultiplier: number | undefined,
   realmIndex: number,
   subLevelIndex: number,
   qiCondensationLayers: number,
@@ -111,27 +124,33 @@ export function calculateSubLevelCost(
 
   // 首境第一个小境界
   if (realmIndex === 0 && subLevelIndex === 0) {
-    return baseCost * conversionRate;
+    return baseCost / conversionRate;
   }
 
   // 首境后续小境界
   if (realmIndex === 0) {
-    return (baseCost * Math.pow(smallMultiplier, subLevelIndex)) * conversionRate;
+    return (baseCost * Math.pow(smallMultiplier, subLevelIndex)) / conversionRate;
   }
 
   // 计算首境最后一个小境界的消耗
   const firstRealmLastCost = baseCost * Math.pow(smallMultiplier, firstRealmSubLevels - 1);
 
   // 计算本大境界的基数
-  const realmBaseCost = firstRealmLastCost * Math.pow(largeMultiplier, realmIndex - 1);
+  // 炼气→筑基（realmIndex=1）使用筑基独立倍率（如果有）
+  let realmBaseCost: number;
+  if (realmIndex === 1 && foundationMultiplier) {
+    realmBaseCost = firstRealmLastCost * foundationMultiplier;
+  } else {
+    realmBaseCost = firstRealmLastCost * Math.pow(largeMultiplier, realmIndex - 1);
+  }
 
   // 本大境界第一个小境界
   if (subLevelIndex === 0) {
-    return (realmBaseCost * largeMultiplier) * conversionRate;
+    return (realmBaseCost * largeMultiplier) / conversionRate;
   }
 
   // 本大境界后续小境界
-  return (realmBaseCost * largeMultiplier * Math.pow(smallMultiplier, subLevelIndex)) * conversionRate;
+  return (realmBaseCost * largeMultiplier * Math.pow(smallMultiplier, subLevelIndex)) / conversionRate;
 }
 
 /**
@@ -195,9 +214,13 @@ export function calculateEfficiencyFactor(params: CalculationParams): number {
 export function calculateResourceProduction(
   type: 'mine' | 'plant',
   grade: string,
-  level: number
+  level: number,
+  mediumGradeMultiplier?: number
 ): number {
-  const gradeMultiplier = GRADE_MULTIPLIERS[grade] || 1;
+  const gradeMultipliers = mediumGradeMultiplier
+    ? { ...DEFAULT_GRADE_MULTIPLIERS, medium: mediumGradeMultiplier }
+    : DEFAULT_GRADE_MULTIPLIERS;
+  const gradeMultiplier = gradeMultipliers[grade as keyof typeof gradeMultipliers] || 1;
   const typeMultiplier = RESOURCE_TYPE_MULTIPLIERS[type] || 1;
   return BASE_PRODUCTION_PER_LEVEL * level * gradeMultiplier * typeMultiplier;
 }
@@ -230,6 +253,19 @@ export function formatDuration(years: number): string {
   return `${days.toFixed(1)}天`;
 }
 
+/**
+ * 格式化系数显示（× 格式）
+ */
+export function formatCoefficient(value: number): string {
+  if (value >= 100) {
+    return `×${value.toFixed(0)}`;
+  } else if (value >= 10) {
+    return `×${value.toFixed(1)}`;
+  } else {
+    return `×${value.toFixed(2)}`;
+  }
+}
+
 // ============================================================================
 // 完整计算函数
 // ============================================================================
@@ -239,7 +275,8 @@ export function formatDuration(years: number): string {
  */
 export function calculateAll(
   params: CalculationParams,
-  resource: ResourceConfig
+  resource: ResourceConfig,
+  overrides?: CoefficientOverrides
 ): CalculationResult {
   const subLevelResults: SubLevelResult[] = [];
   const realmSummaries: RealmSummary[] = [];
@@ -255,19 +292,21 @@ export function calculateAll(
   const REALM_CONFIGS = getRealmConfigs(params.qiCondensationLayers);
 
   // 计算转换率和吸收率
-  const conversionRate = calculateConversionRate(params);
-  const absorptionRate = calculateAbsorptionRate(params);
+  const conversionRate = calculateConversionRate(params, overrides);
+  const absorptionRate = calculateAbsorptionRate(params, overrides);
 
-  // 计算资源产出
+  // 计算资源产出（支持可配置的进位倍率）
   const mineOutput = calculateResourceProduction(
     resource.mineType,
     resource.mineGrade,
-    resource.mineLevel
+    resource.mineLevel,
+    params.mediumGradeMultiplier
   );
   const plantOutput = calculateResourceProduction(
     'plant',
     resource.plantGrade,
-    resource.plantLevel
+    resource.plantLevel,
+    params.mediumGradeMultiplier
   );
   const maxProduction = Math.max(mineOutput, plantOutput);
 
@@ -288,6 +327,7 @@ export function calculateAll(
         params.baseCost,
         params.smallRealmMultiplier,
         params.largeRealmMultiplier,
+        params.foundationBuildingMultiplier,
         realmIndex,
         subLevelIndex,
         params.qiCondensationLayers,
@@ -468,30 +508,44 @@ export function validateParams(params: CalculationParams): string[] {
     errors.push('吸收一颗灵石所需时辰应在1-24之间');
   }
 
-  // 转换率参数
-  if (params.techniqueQuality < 0.1 || params.techniqueQuality > 1) {
-    errors.push('功法品质系数应在0.1-1之间');
+  // 新体系：功法品质系数范围 0.1-999（值越大越好）
+  if (params.techniqueQuality < 0.1 || params.techniqueQuality > 999) {
+    errors.push('功法品质系数应在0.1-999之间');
   }
 
-  // 吸收效率参数
-  if (params.comprehension < 0.1 || params.comprehension > 10) {
-    errors.push('悟性应在0.1-10之间');
+  // 筑基倍率可选，但如果设置了需要验证
+  if (params.foundationBuildingMultiplier !== undefined) {
+    if (params.foundationBuildingMultiplier < 1 || params.foundationBuildingMultiplier > 999) {
+      errors.push('筑基倍率应在1-999之间');
+    }
   }
 
-  if (params.physiqueFactor < 0.1 || params.physiqueFactor > 10) {
-    errors.push('体系数应在0.1-10之间');
+  // 灵脉进位倍率可选
+  if (params.mediumGradeMultiplier !== undefined) {
+    if (params.mediumGradeMultiplier < 1 || params.mediumGradeMultiplier > 999) {
+      errors.push('中品进位倍率应在1-999之间');
+    }
   }
 
-  if (params.environmentFactor < 0.1 || params.environmentFactor > 10) {
-    errors.push('环境系数应在0.1-10之间');
+  // 吸收效率参数范围 0.1-999
+  if (params.comprehension < 0.1 || params.comprehension > 999) {
+    errors.push('悟性应在0.1-999之间');
   }
 
-  if (params.retreatFactor < 0.1 || params.retreatFactor > 10) {
-    errors.push('闭关系数应在0.1-10之间');
+  if (params.physiqueFactor < 0.1 || params.physiqueFactor > 999) {
+    errors.push('体系数应在0.1-999之间');
   }
 
-  if (params.epiphanyFactor < 1 || params.epiphanyFactor > 100) {
-    errors.push('顿悟系数应在1-100之间');
+  if (params.environmentFactor < 0.1 || params.environmentFactor > 999) {
+    errors.push('环境系数应在0.1-999之间');
+  }
+
+  if (params.retreatFactor < 0.1 || params.retreatFactor > 999) {
+    errors.push('闭关系数应在0.1-999之间');
+  }
+
+  if (params.epiphanyFactor < 0.1 || params.epiphanyFactor > 999) {
+    errors.push('顿悟系数应在0.1-999之间');
   }
 
   return errors;

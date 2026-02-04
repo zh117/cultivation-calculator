@@ -1,5 +1,5 @@
 // ============================================================================
-// 预设方案配置
+// 预设方案配置（新体系：值越大越好）
 // ============================================================================
 
 import type { PresetConfig } from '@/lib/types';
@@ -19,11 +19,11 @@ export const MORTAL_PRESET: PresetConfig = {
     largeRealmMultiplier: 10,
     qiCondensationLayers: 12,
     baseAbsorptionRate: 12, // 吸收一颗灵石需要12时辰，年吸收365颗
-    // 转换率参数（影响消耗）
+    // 转换率参数（新体系：值越大越好）
     comprehension: 1.0,
-    techniqueQuality: 0.97, // 黄阶中
+    techniqueQuality: 1.03, // 黄阶中（原0.97取倒数）
     spiritualRootType: 'waste', // 废灵根（五灵根）
-    // 吸收效率参数（影响时长）
+    // 吸收效率参数（值越大越好）
     physiqueFactor: 1.0,
     environmentFactor: 1.0,
     retreatFactor: 1.0,
@@ -53,11 +53,11 @@ export const GENIUS_PRESET: PresetConfig = {
     largeRealmMultiplier: 10,
     qiCondensationLayers: 12,
     baseAbsorptionRate: 6, // 吸收一颗灵石需要6时辰，年吸收730颗
-    // 转换率参数（影响消耗）
+    // 转换率参数（新体系：值越大越好）
     comprehension: 1.5,
-    techniqueQuality: 0.79, // 玄阶上
+    techniqueQuality: 1.27, // 玄阶上（原0.79取倒数）
     spiritualRootType: 'heavenly', // 天灵根（单灵根）
-    // 吸收效率参数（影响时长）
+    // 吸收效率参数
     physiqueFactor: 2.0,   // 天灵根，吸收也快
     environmentFactor: 1.0,
     retreatFactor: 1.5,
@@ -87,11 +87,11 @@ export const HIGH_MARTIAL_PRESET: PresetConfig = {
     largeRealmMultiplier: 5,
     qiCondensationLayers: 9,
     baseAbsorptionRate: 6, // 吸收一颗灵石需要6时辰，年吸收730颗
-    // 转换率参数（影响消耗）
+    // 转换率参数（新体系：值越大越好）
     comprehension: 1.2,
-    techniqueQuality: 0.85, // 玄阶中
+    techniqueQuality: 1.18, // 玄阶中（原0.85取倒数）
     spiritualRootType: 'dual', // 双灵根
-    // 吸收效率参数（影响时长）
+    // 吸收效率参数
     physiqueFactor: 1.2,
     environmentFactor: 1.2,
     retreatFactor: 1.0,
@@ -121,11 +121,11 @@ export const TYCOON_PRESET: PresetConfig = {
     largeRealmMultiplier: 10,
     qiCondensationLayers: 12,
     baseAbsorptionRate: 8, // 吸收一颗灵石需要8时辰，年吸收547颗
-    // 转换率参数（影响消耗）
+    // 转换率参数（新体系：值越大越好）
     comprehension: 1.0,
-    techniqueQuality: 0.72, // 地阶下
+    techniqueQuality: 1.39, // 地阶下（原0.72取倒数）
     spiritualRootType: 'triple', // 三灵根
-    // 吸收效率参数（影响时长）
+    // 吸收效率参数
     physiqueFactor: 1.0,
     environmentFactor: 3.0, // 大型灵脉
     retreatFactor: 2.0,
@@ -155,11 +155,11 @@ export const FAST_CULTIVATION_PRESET: PresetConfig = {
     largeRealmMultiplier: 3,
     qiCondensationLayers: 9,
     baseAbsorptionRate: 4, // 吸收一颗灵石需要4时辰，年吸收1095颗
-    // 转换率参数（影响消耗）
+    // 转换率参数（新体系：值越大越好）
     comprehension: 2.0,
-    techniqueQuality: 0.90, // 玄阶下
+    techniqueQuality: 1.11, // 玄阶下（原0.90取倒数）
     spiritualRootType: 'dual', // 双灵根
-    // 吸收效率参数（影响时长）
+    // 吸收效率参数
     physiqueFactor: 1.5,
     environmentFactor: 1.5,
     retreatFactor: 1.5,
@@ -189,11 +189,11 @@ export const HARD_MODE_PRESET: PresetConfig = {
     largeRealmMultiplier: 15,
     qiCondensationLayers: 15,
     baseAbsorptionRate: 18, // 吸收一颗灵石需要18时辰，年吸收243颗
-    // 转换率参数（影响消耗）
+    // 转换率参数（新体系：值越大越好）
     comprehension: 0.8,
-    techniqueQuality: 0.99, // 黄阶下
+    techniqueQuality: 1.01, // 黄阶下（原0.99取倒数）
     spiritualRootType: 'waste', // 废灵根（五灵根）
-    // 吸收效率参数（影响时长）
+    // 吸收效率参数
     physiqueFactor: 0.8,
     environmentFactor: 0.8,
     retreatFactor: 1.0,
@@ -230,4 +230,33 @@ export const PRESET_OPTIONS = [
   { value: 'tycoon', label: '土豪流', description: '天赋一般，靠资源堆砌' },
   { value: 'fast-cultivation', label: '速成流', description: '极速突破，注意后期数值' },
   { value: 'hard-mode', label: '困难模式', description: '资源匮乏，修炼艰难' },
+];
+
+/**
+ * 功法品质选项（新体系：值越大越好）
+ */
+export const TECHNIQUE_OPTIONS = [
+  { id: 'yellow-inferior', value: 1.01, label: '黄阶下', color: 'text-gray-500' },
+  { id: 'yellow-medium', value: 1.03, label: '黄阶中', color: 'text-gray-500' },
+  { id: 'yellow-superior', value: 1.06, label: '黄阶上', color: 'text-gray-400' },
+  { id: 'mysterious-inferior', value: 1.11, label: '玄阶下', color: 'text-green-600' },
+  { id: 'mysterious-medium', value: 1.18, label: '玄阶中', color: 'text-green-500' },
+  { id: 'mysterious-superior', value: 1.27, label: '玄阶上', color: 'text-green-400' },
+  { id: 'earth-inferior', value: 1.39, label: '地阶下', color: 'text-blue-600' },
+  { id: 'earth-medium', value: 1.56, label: '地阶中', color: 'text-blue-500' },
+  { id: 'earth-superior', value: 1.82, label: '地阶上', color: 'text-blue-400' },
+  { id: 'heaven-inferior', value: 2.22, label: '天阶下', color: 'text-purple-600' },
+  { id: 'heaven-medium', value: 2.94, label: '天阶中', color: 'text-purple-500' },
+  { id: 'heaven-superior', value: 4.55, label: '天阶上', color: 'text-purple-400' },
+];
+
+/**
+ * 灵根选项（新体系：值越大越好）
+ */
+export const SPIRITUAL_ROOT_OPTIONS = [
+  { value: 'waste' as const, label: '废灵根', sublabel: '五灵根', coefficient: 1.0, color: 'text-red-600' },
+  { value: 'mixed' as const, label: '杂灵根', sublabel: '四灵根', coefficient: 1.11, color: 'text-orange-600' },
+  { value: 'triple' as const, label: '三灵根', sublabel: '三灵根', coefficient: 1.25, color: 'text-yellow-600' },
+  { value: 'dual' as const, label: '双灵根', sublabel: '双灵根', coefficient: 1.67, color: 'text-green-600' },
+  { value: 'heavenly' as const, label: '天灵根', sublabel: '单灵根', coefficient: 3.33, color: 'text-purple-600' },
 ];

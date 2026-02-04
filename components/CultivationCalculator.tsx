@@ -1,32 +1,30 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ParameterPanel } from './ParameterPanel';
 import { RealmTable, RealmSummaryTable } from './RealmTable';
 import { AlertList } from './AlertList';
-import { SchemeManager } from './SchemeManager';
 import { CollapsibleSection } from './CollapsibleSection';
 import { PresetDetailPanel } from './PresetDetailPanel';
-import type { CalculationParams, ResourceConfig, CalculationResult, SavedScheme } from '@/lib/types';
+import type { CalculationParams, ResourceConfig, CalculationResult, UserOverrides } from '@/lib/types';
 import { MORTAL_PRESET, PRESET_OPTIONS, PRESETS } from '@/lib/data/presets';
-import { calculateAll, validateParams, formatDuration, calculateConversionRate } from '@/lib/calculator/core';
+import { calculateAll, validateParams, formatDuration } from '@/lib/calculator/core';
+import {
+  getCurrentPreset,
+  setCurrentPreset,
+  buildParams,
+  buildResource,
+  getUserOverrides,
+  setUserOverride,
+  clearAllUserOverrides,
+  migrateFromAutoConfig,
+  migrateFromSchemes,
+} from '@/lib/storage/user-config';
 
 // SVG 图标组件 - 添加明确的尺寸约束
 const RefreshIcon = () => (
   <svg className="w-4 h-4" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-  </svg>
-);
-
-const SaveIcon = () => (
-  <svg className="w-4 h-4" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-  </svg>
-);
-
-const FolderIcon = () => (
-  <svg className="w-4 h-4" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
   </svg>
 );
 
@@ -65,11 +63,41 @@ export function CultivationCalculator() {
   // 状态管理
   const [params, setParams] = useState<CalculationParams>(MORTAL_PRESET.params);
   const [resource, setResource] = useState<ResourceConfig>(MORTAL_PRESET.resource);
+  const [userOverrides, setUserOverrides] = useState<UserOverrides>({});
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [selectedPreset, setSelectedPreset] = useState('mortal');
   const [paramErrors, setParamErrors] = useState<string[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showPresetDetail, setShowPresetDetail] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // 初始化：尝试迁移旧数据，然后加载用户配置
+  useEffect(() => {
+    // 尝试从旧的 auto-config 迁移
+    const migratedFromAuto = migrateFromAutoConfig();
+
+    // 如果 auto-config 没数据，尝试从 schemes 迁移
+    if (!migratedFromAuto) {
+      migrateFromSchemes();
+    }
+
+    // 获取当前预设 ID
+    const currentPresetId = getCurrentPreset();
+    setSelectedPreset(currentPresetId);
+
+    // 获取用户覆盖值
+    const overrides = getUserOverrides();
+    setUserOverrides(overrides);
+
+    // 构建配置（预设 + 用户覆盖值）
+    const preset = PRESETS[currentPresetId] || MORTAL_PRESET;
+    const builtParams = buildParams(preset);
+    const builtResource = buildResource(preset);
+
+    setParams(builtParams);
+    setResource(builtResource);
+    setIsInitialized(true);
+  }, []);
 
   // 菜单容器 ref - 用于检测点击外部
   const menuRef = useRef<HTMLDivElement>(null);
@@ -92,6 +120,8 @@ export function CultivationCalculator() {
 
   // 计算结果
   useEffect(() => {
+    if (!isInitialized) return;
+
     const errors = validateParams(params);
     setParamErrors(errors);
 
@@ -101,47 +131,90 @@ export function CultivationCalculator() {
     } else {
       setResult(null);
     }
-  }, [params, resource]);
+  }, [params, resource, isInitialized]);
 
-  // 加载预设 - 修复：真正加载预设数据
+  // 加载预设（保留用户覆盖值）
   const loadPreset = (presetId: string) => {
     const preset = PRESETS[presetId];
     if (preset) {
       setSelectedPreset(presetId);
+      setCurrentPreset(presetId);
+      // 使用 buildParams/buildResource 合并用户覆盖值
+      setParams(buildParams(preset));
+      setResource(buildResource(preset));
+    }
+  };
+
+  // 参数更新处理（直接写入 localStorage）
+  const updateParam = <K extends keyof CalculationParams>(
+    key: K,
+    value: CalculationParams[K]
+  ) => {
+    const newParams = { ...params, [key]: value };
+    setParams(newParams);
+
+    // 写入 localStorage
+    setUserOverride(key as any, value as any);
+
+    // 标记为自定义
+    if (selectedPreset !== 'custom') {
+      setSelectedPreset('custom');
+    }
+  };
+
+  // 资源更新处理（直接写入 localStorage）
+  const updateResource = <K extends keyof ResourceConfig>(
+    key: K,
+    value: ResourceConfig[K]
+  ) => {
+    const newResource = { ...resource, [key]: value };
+    setResource(newResource);
+
+    // 写入 localStorage
+    setUserOverride(key as any, value as any);
+
+    // 标记为自定义
+    if (selectedPreset !== 'custom') {
+      setSelectedPreset('custom');
+    }
+  };
+
+  // 批量参数更新（用于预设加载等场景）
+  const handleParamsChange = (newParams: CalculationParams) => {
+    setParams(newParams);
+  };
+
+  // 批量资源更新
+  const handleResourceChange = (newResource: ResourceConfig) => {
+    setResource(newResource);
+  };
+
+  // 设置用户覆盖值（更新 localStorage 和状态）
+  const handleSetUserOverride = <K extends keyof UserOverrides>(
+    key: K,
+    value: UserOverrides[K]
+  ) => {
+    setUserOverride(key, value);
+    setUserOverrides(prev => ({ ...prev, [key]: value }));
+  };
+
+  // 重置为默认（清除所有用户覆盖值）
+  const handleReset = () => {
+    clearAllUserOverrides();
+    setUserOverrides({});
+    const preset = PRESETS['mortal'];
+    if (preset) {
+      setSelectedPreset('mortal');
+      setCurrentPreset('mortal');
       setParams(preset.params);
       setResource(preset.resource);
     }
   };
 
-  // 加载保存的方案
-  const handleLoadScheme = (scheme: SavedScheme) => {
-    setParams(scheme.params);
-    setResource(scheme.resource);
-    setSelectedPreset('custom');
-  };
-
-  // 重置为默认
-  const handleReset = () => {
-    setParams(MORTAL_PRESET.params);
-    setResource(MORTAL_PRESET.resource);
-    setSelectedPreset('mortal');
-  };
-
-  // 计算转换率系数（影响灵石消耗）
-  const conversionRate = useMemo(() => {
-    return calculateConversionRate(params).toFixed(2);
-  }, [params]);
-
-  // 计算吸收效率系数（影响修炼时长）
-  const absorptionRate = useMemo(() => {
-    return (
-      params.comprehension *
-      params.physiqueFactor *
-      params.environmentFactor *
-      params.retreatFactor *
-      params.epiphanyFactor
-    ).toFixed(2);
-  }, [params]);
+  // 获取预设显示名称
+  const presetLabel = selectedPreset === 'custom'
+    ? '自定义'
+    : PRESET_OPTIONS.find(o => o.value === selectedPreset)?.label;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 dark:from-gray-950 dark:via-gray-900 dark:to-slate-950">
@@ -154,7 +227,7 @@ export function CultivationCalculator() {
               修仙世界观量化计算器
             </h1>
             <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">
-              {PRESET_OPTIONS.find(o => o.value === selectedPreset)?.label}
+              {presetLabel}
             </span>
           </div>
 
@@ -207,16 +280,6 @@ export function CultivationCalculator() {
                     <RefreshIcon />
                     重置为默认
                   </button>
-
-                  {/* 保存/加载 */}
-                  <div className="border-t border-gray-100 dark:border-gray-700">
-                    <SchemeManager
-                      currentParams={params}
-                      currentResource={resource}
-                      onLoadScheme={(scheme) => { handleLoadScheme(scheme); setMenuOpen(false); }}
-                      menuItemMode
-                    />
-                  </div>
                 </div>
             )}
           </div>
@@ -239,35 +302,13 @@ export function CultivationCalculator() {
                 <ParameterPanel
                   params={params}
                   resource={resource}
-                  onParamsChange={setParams}
-                  onResourceChange={setResource}
+                  userOverrides={userOverrides}
+                  onParamsChange={handleParamsChange}
+                  onResourceChange={handleResourceChange}
+                  onUpdateParam={updateParam}
+                  onUpdateResource={updateResource}
+                  onSetUserOverride={handleSetUserOverride}
                 />
-
-                {/* 效率总览 */}
-                <div className="mt-4 grid grid-cols-2 gap-3">
-                  <div className="p-3 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800/30">
-                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-0.5">
-                      转换率（影响消耗）
-                    </div>
-                    <div className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
-                      {conversionRate}x
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                      功法 ÷ 灵根系数
-                    </div>
-                  </div>
-                  <div className="p-3 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/30">
-                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-0.5">
-                      吸收效率（影响时长）
-                    </div>
-                    <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
-                      {absorptionRate}x
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                      悟性 × 体质 × 环境 × 闭关 × 顿悟
-                    </div>
-                  </div>
-                </div>
                 </div>
               </div>
             </div>

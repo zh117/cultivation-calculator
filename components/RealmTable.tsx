@@ -3,15 +3,15 @@
 import type { SubLevelResult, RealmSummary } from '@/lib/types';
 import { formatSpiritStones, formatDuration } from '@/lib/calculator/core';
 
-// 图标组件 - 添加明确的尺寸约束
-const CheckCircleIcon = () => (
-  <svg className="w-4 h-4" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+// SVG 图标常量（避免函数组件导致的条件渲染问题）
+const CHECK_ICON = (
+  <svg className="w-4 h-4" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
   </svg>
 );
 
-const AlertCircleIcon = () => (
-  <svg className="w-4 h-4" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+const ALERT_ICON = (
+  <svg className="w-4 h-4" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
   </svg>
 );
@@ -69,7 +69,7 @@ export function RealmTable({ realms, subLevels }: RealmTableProps) {
 
             return (
               <tr
-                key={index}
+                key={`${row.realmName}-${row.subLevelName}`}
                 className={`${
                   isFirstOfRealm ? 'border-t-2 border-gray-300 dark:border-gray-600' : ''
                 } ${
@@ -135,12 +135,12 @@ export function RealmTable({ realms, subLevels }: RealmTableProps) {
                 <td className="px-3 py-2 text-center">
                   {row.isLifespanExceeded ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full">
-                      <AlertCircleIcon />
+                      {ALERT_ICON}
                       寿命不足
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full">
-                      <CheckCircleIcon />
+                      {CHECK_ICON}
                       正常
                     </span>
                   )}

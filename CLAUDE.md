@@ -6,6 +6,54 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 修仙世界观量化计算器 - 一个用于检测修仙小说世界观数值自洽性和崩坏风险的 Web 应用。基于"凡人流"数值体系设计，帮助作者/读者验证修仙设定中的数值是否合理。
 
+## PDCA工作流（绝对规则 - 头脑风暴后强制执行）
+
+**🚨 强制约束：头脑风暴后禁止直接实施，必须完成以下文档步骤**
+
+### 可用 Skill 命令
+
+| Skill | 触发时机 | 功能说明 |
+|-------|----------|----------|
+| `sc:brainstorm` | 需求分析阶段 | 通过苏格拉底式对话探索需求，明确实施范围 |
+| `/pdca:plan` | 头脑风暴后 | 创建功能文档结构（自动更新 TASK.md） |
+| `sc:implement` | 创建文档后 | 开始功能实施，使用 TodoWrite 跟踪进度 |
+| `/pdca:do` | 实施完成后 | 更新施工日志（DO.md）和检查清单（CHECK.md） |
+| `/pdca:check` | 实施完成后 | 代码质量检查（读取 `.pdcarc.json` 自动生成） |
+| `/pdca:act` | 功能完成后 | 生成 ACT.md + 整理文件夹（合并额外文档、统一文件名） |
+
+### 完整工作流
+
+```
+用户需求
+    ↓
+[Step 1] 头脑风暴 → 技能调用: `sc:brainstorm`
+    ↓
+[Step 2] 创建 PDCA 文档 → 技能调用: `/pdca:plan`
+    ├─ 📁 docs/pdca/yyyymmdd-[feature-name]/
+    │   ├─ PLAN.md   (粗略 PRD - 设计意图)
+    │   ├─ DO.md     (施工日志 - 实施记录)
+    │   ├─ CHECK.md  (用户态验收 + AI 态质量复查)
+    │   └─ ACT.md    (模块知识库 - AI 核心入口)
+    ↓
+[Step 3] 实施功能 → 技能调用: `sc:implement`
+    ├─ 使用 TodoWrite 跟踪进度
+    └─ 完成实施后 → 技能调用: `/pdca:do` 更新文档
+        ├─ 更新 DO.md（文件变更、实施记录）
+        └─ 更新 CHECK.md（用户态验收清单）
+    ↓
+[Step 4] 质量检查 → 技能调用: `/pdca:check`
+    ├─ 读取 .pdcarc.json 配置
+    ├─ 项目规范检查（置信度评估）
+    └─ 自动修复记录
+    ↓
+[Step 5] 生成知识库 → 技能调用: `/pdca:act`
+    └─ 从 PLAN/DO/CHECK 提取信息生成 ACT.md
+    └─ **整理文件夹**：合并 README/QUICKSTART/MODULE 等额外文档，统一文件名为大写
+    └─ 确保只保留 PLAN/DO/CHECK/ACT 四个核心文档
+    ↓
+    └─→ [需要调整] → 回到 Step 2 更新规划（持续迭代）
+```
+
 ## 开发命令
 
 ```bash

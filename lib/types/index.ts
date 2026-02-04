@@ -59,7 +59,7 @@ export interface RealmConfig {
 
 /**
  * 修炼参数（转换率维度 - 影响灵石消耗）
- * 值越低，消耗越少（功法品质和灵根系数都是越小越好）
+ * 值越大，消耗越少（公式已反转：cost = rawCost / conversionRate）
  */
 export interface CultivationParams {
   // 基础参数
@@ -70,8 +70,14 @@ export interface CultivationParams {
   baseAbsorptionRate: number; // 吸收一颗下品灵石需要的时辰数
 
   // 转换率系数（影响 cost）
-  techniqueQuality: number; // 功法品质
+  techniqueQuality: number; // 功法品质（新体系：值越大越好）
   spiritualRootType: SpiritualRootType; // 灵根类型
+
+  // 新增：筑基独立倍率
+  foundationBuildingMultiplier?: number; // 筑基跨境界倍率（独立于 largeRealmMultiplier）
+
+  // 新增：灵脉进位倍率
+  mediumGradeMultiplier?: number; // 中品灵石的进位倍率（默认100）
 }
 
 /**
@@ -191,6 +197,7 @@ export interface SavedScheme {
   createdAt: number;
   params: CalculationParams;
   resource: ResourceConfig;
+  coefficientOverrides?: CoefficientOverrides;  // 系数覆盖值
   result?: CalculationResult;
 }
 
@@ -211,4 +218,89 @@ export interface ColorTheme {
   warning: string;
   error: string;
   critical: string;
+}
+
+/**
+ * 系数覆盖配置（允许用户自定义单个系数值）
+ * 输入范围：0.1-999，大于1为正面意义，小于1为负面意义
+ */
+export interface CoefficientOverrides {
+  // 转化率维度
+  techniqueQuality?: number;      // 功法品质系数覆盖
+  spiritualRootCoeff?: number;    // 灵根系数覆盖（优先级高于 spiritualRootType）
+  // 吸收效率维度
+  comprehension?: number;         // 悟性系数覆盖
+  physiqueFactor?: number;        // 体质系数覆盖
+  environmentFactor?: number;     // 环境系数覆盖
+  retreatFactor?: number;         // 闭关系数覆盖
+  epiphanyFactor?: number;        // 顿悟系数覆盖
+}
+
+/**
+ * 扩展计算参数（包含系数覆盖）
+ */
+export interface ExtendedCalculationParams extends CalculationParams {
+  coefficientOverrides?: CoefficientOverrides;
+}
+
+/**
+ * 自动保存的配置
+ */
+export interface AutoSavedConfig {
+  params: CalculationParams;
+  resource: ResourceConfig;
+  coefficientOverrides?: CoefficientOverrides;
+  savedAt: number;
+}
+
+/**
+ * 用户自定义配置覆盖（细粒度）
+ * 所有配置项均可独立覆盖，支持大类和小类
+ */
+export interface UserOverrides {
+  // 基础参数（大类）
+  baseCost?: number;
+  smallRealmMultiplier?: number;
+  largeRealmMultiplier?: number;
+  foundationBuildingMultiplier?: number;
+  qiCondensationLayers?: number;
+  baseAbsorptionRate?: number;
+  mediumGradeMultiplier?: number;
+
+  // 小类互斥选项（存储选中值）
+  techniqueQuality?: number;           // 功法品质选中值
+  techniqueQualityLabel?: string;      // 功法品质标签（用户自定义时使用）
+  spiritualRootType?: SpiritualRootType; // 灵根类型选中值
+
+  // 吸收效率（大类）
+  comprehension?: number;
+  physiqueFactor?: number;
+  environmentFactor?: number;
+  retreatFactor?: number;
+  epiphanyFactor?: number;
+
+  // 灵脉资源（大类）
+  mineGrade?: ResourceGrade;
+  mineLevel?: number;
+  plantGrade?: ResourceGrade;
+  plantLevel?: number;
+
+  // 功法品质各选项的自定义值
+  techniqueOptionValues?: Record<string, number>; // { 'yellow-inferior': 1.1, ... }
+}
+
+/**
+ * 当前预设信息
+ */
+export interface CurrentPresetInfo {
+  presetId: string;
+  updatedAt: number;
+}
+
+/**
+ * 计算结果显示（用于标题展示）
+ */
+export interface CalculationDisplay {
+  conversionRate: number;    // 转化率最终结果
+  absorptionRate: number;    // 吸收效率最终结果
 }
