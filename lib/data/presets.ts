@@ -254,9 +254,67 @@ export const TECHNIQUE_OPTIONS = [
  * 灵根选项（新体系：值越大越好）
  */
 export const SPIRITUAL_ROOT_OPTIONS = [
-  { value: 'waste' as const, label: '废灵根', sublabel: '五灵根', coefficient: 1.0, color: 'text-red-600' },
-  { value: 'mixed' as const, label: '杂灵根', sublabel: '四灵根', coefficient: 1.11, color: 'text-orange-600' },
-  { value: 'triple' as const, label: '三灵根', sublabel: '三灵根', coefficient: 1.25, color: 'text-yellow-600' },
-  { value: 'dual' as const, label: '双灵根', sublabel: '双灵根', coefficient: 1.67, color: 'text-green-600' },
-  { value: 'heavenly' as const, label: '天灵根', sublabel: '单灵根', coefficient: 3.33, color: 'text-purple-600' },
+  { id: 'waste', value: 'waste' as const, label: '废灵根', sublabel: '五灵根', coefficient: 1.0, color: 'text-red-600' },
+  { id: 'mixed', value: 'mixed' as const, label: '杂灵根', sublabel: '四灵根', coefficient: 1.11, color: 'text-orange-600' },
+  { id: 'triple', value: 'triple' as const, label: '三灵根', sublabel: '三灵根', coefficient: 1.25, color: 'text-yellow-600' },
+  { id: 'dual', value: 'dual' as const, label: '双灵根', sublabel: '双灵根', coefficient: 1.67, color: 'text-green-600' },
+  { id: 'heavenly', value: 'heavenly' as const, label: '天灵根', sublabel: '单灵根', coefficient: 3.33, color: 'text-purple-600' },
+];
+
+/**
+ * 吸收效率选项 - 悟性
+ */
+export const COMPREHENSION_OPTIONS = [
+  { id: 'comprehension-0.5', value: 0.5, label: '愚笨', color: 'text-red-600' },
+  { id: 'comprehension-0.8', value: 0.8, label: '迟钝', color: 'text-orange-600' },
+  { id: 'comprehension-1.0', value: 1.0, label: '普通', color: 'text-gray-600' },
+  { id: 'comprehension-1.5', value: 1.5, label: '聪慧', color: 'text-green-600' },
+  { id: 'comprehension-2.0', value: 2.0, label: '悟性高', color: 'text-blue-600' },
+  { id: 'comprehension-3.0', value: 3.0, label: '顿悟', color: 'text-purple-600' },
+];
+
+/**
+ * 吸收效率选项 - 体质
+ */
+export const PHYSIQUE_OPTIONS = [
+  { id: 'physique-0.8', value: 0.8, label: '废体', color: 'text-red-600' },
+  { id: 'physique-1.0', value: 1.0, label: '凡体', color: 'text-gray-600' },
+  { id: 'physique-1.2', value: 1.2, label: '灵体', color: 'text-green-600' },
+  { id: 'physique-1.5', value: 1.5, label: '特殊灵体', color: 'text-blue-600' },
+  { id: 'physique-2.0', value: 2.0, label: '天灵根', color: 'text-purple-600' },
+];
+
+/**
+ * 吸收效率选项 - 环境
+ */
+export const ENVIRONMENT_OPTIONS = [
+  { id: 'environment-0.5', value: 0.5, label: '荒芜之地', color: 'text-red-600' },
+  { id: 'environment-0.8', value: 0.8, label: '普通洞府', color: 'text-orange-600' },
+  { id: 'environment-1.0', value: 1.0, label: '标准洞府', color: 'text-gray-600' },
+  { id: 'environment-1.2', value: 1.2, label: '灵脉节点', color: 'text-green-600' },
+  { id: 'environment-1.5', value: 1.5, label: '小型灵脉', color: 'text-green-600' },
+  { id: 'environment-2.0', value: 2.0, label: '中型灵脉', color: 'text-blue-600' },
+  { id: 'environment-3.0', value: 3.0, label: '大型灵脉', color: 'text-blue-600' },
+  { id: 'environment-5.0', value: 5.0, label: '极品灵脉', color: 'text-purple-600' },
+];
+
+/**
+ * 吸收效率选项 - 闭关
+ */
+export const RETREAT_OPTIONS = [
+  { id: 'retreat-0.8', value: 0.8, label: '游历历练', color: 'text-orange-600' },
+  { id: 'retreat-1.0', value: 1.0, label: '正常修炼', color: 'text-gray-600' },
+  { id: 'retreat-1.5', value: 1.5, label: '闭关修炼', color: 'text-green-600' },
+  { id: 'retreat-2.0', value: 2.0, label: '深度闭关', color: 'text-blue-600' },
+];
+
+/**
+ * 吸收效率选项 - 顿悟
+ */
+export const EPIPHANY_OPTIONS = [
+  { id: 'epiphany-1.0', value: 1.0, label: '无顿悟', color: 'text-gray-600' },
+  { id: 'epiphany-1.5', value: 1.5, label: '偶有顿悟', color: 'text-green-600' },
+  { id: 'epiphany-2.0', value: 2.0, label: '常有顿悟', color: 'text-green-600' },
+  { id: 'epiphany-3.0', value: 3.0, label: '顿悟频繁', color: 'text-blue-600' },
+  { id: 'epiphany-5.0', value: 5.0, label: '顿悟连连', color: 'text-purple-600' },
 ];

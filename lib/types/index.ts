@@ -287,6 +287,16 @@ export interface UserOverrides {
 
   // 功法品质各选项的自定义值
   techniqueOptionValues?: Record<string, number>; // { 'yellow-inferior': 1.1, ... }
+
+  // 灵根类型各选项的自定义值
+  spiritualRootOptionValues?: Record<string, number>; // { 'waste': 1.0, 'dual': 1.8, ... }
+
+  // 吸收效率各小项的选项自定义值
+  comprehensionOptionValues?: Record<string, number>;    // { '0.5': 0.6, '1.5': 1.8, ... }
+  physiqueOptionValues?: Record<string, number>;         // { '0.8': 0.9, '1.5': 1.7, ... }
+  environmentOptionValues?: Record<string, number>;      // { '0.5': 0.8, '3.0': 4.0, ... }
+  retreatOptionValues?: Record<string, number>;          // { '0.8': 0.9, '2.0': 2.5, ... }
+  epiphanyOptionValues?: Record<string, number>;         // { '1.0': 1.2, '3.0': 4.0, ... }
 }
 
 /**

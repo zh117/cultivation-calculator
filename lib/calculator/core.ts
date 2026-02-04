@@ -135,14 +135,18 @@ export function calculateSubLevelCost(
   // 计算首境最后一个小境界的消耗
   const firstRealmLastCost = baseCost * Math.pow(smallMultiplier, firstRealmSubLevels - 1);
 
-  // 计算本大境界的基数
   // 炼气→筑基（realmIndex=1）使用筑基独立倍率（如果有）
-  let realmBaseCost: number;
+  // 筑基期只需要按筑基倍率放大，不需要再乘以大境界倍率
   if (realmIndex === 1 && foundationMultiplier) {
-    realmBaseCost = firstRealmLastCost * foundationMultiplier;
-  } else {
-    realmBaseCost = firstRealmLastCost * Math.pow(largeMultiplier, realmIndex - 1);
+    // 筑基期基数 = 首境最后小境界消耗 × 筑基倍率
+    const realmBaseCost = firstRealmLastCost * foundationMultiplier;
+    // 筑基期小境界 = 基数 × 小境界倍率^小境界索引
+    return (realmBaseCost * Math.pow(smallMultiplier, subLevelIndex)) / conversionRate;
   }
+
+  // 其他大境界：使用原有逻辑
+  // 计算本大境界的基数
+  const realmBaseCost = firstRealmLastCost * Math.pow(largeMultiplier, realmIndex - 1);
 
   // 本大境界第一个小境界
   if (subLevelIndex === 0) {
