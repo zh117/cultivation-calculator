@@ -72,6 +72,7 @@ export interface CultivationParams {
   // 转换率系数（影响 cost）
   techniqueQuality: number; // 功法品质（新体系：值越大越好）
   spiritualRootType: SpiritualRootType; // 灵根类型
+  physiqueFactor: number; // 体质血脉（影响资源转化效率）
 
   // 新增：筑基独立倍率
   foundationBuildingMultiplier?: number; // 筑基跨境界倍率（独立于 largeRealmMultiplier）
@@ -86,7 +87,6 @@ export interface CultivationParams {
  */
 export interface AbsorptionParams {
   comprehension: number;  // 悟性（影响吸收速度）
-  physiqueFactor: number;   // 体质（影响吸收速度）
   environmentFactor: number;// 环境（灵气浓度）
   retreatFactor: number;    // 闭关（专注度）
   epiphanyFactor: number;   // 顿悟（临时爆发）
@@ -228,9 +228,9 @@ export interface CoefficientOverrides {
   // 转化率维度
   techniqueQuality?: number;      // 功法品质系数覆盖
   spiritualRootCoeff?: number;    // 灵根系数覆盖（优先级高于 spiritualRootType）
+  physiqueFactor?: number;        // 体质血脉系数覆盖
   // 吸收效率维度
   comprehension?: number;         // 悟性系数覆盖
-  physiqueFactor?: number;        // 体质系数覆盖
   environmentFactor?: number;     // 环境系数覆盖
   retreatFactor?: number;         // 闭关系数覆盖
   epiphanyFactor?: number;        // 顿悟系数覆盖

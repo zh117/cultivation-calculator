@@ -236,18 +236,18 @@ export const PRESET_OPTIONS = [
  * 功法品质选项（新体系：值越大越好）
  */
 export const TECHNIQUE_OPTIONS = [
-  { id: 'yellow-inferior', value: 1.01, label: '黄阶下', color: 'text-gray-500' },
-  { id: 'yellow-medium', value: 1.03, label: '黄阶中', color: 'text-gray-500' },
-  { id: 'yellow-superior', value: 1.06, label: '黄阶上', color: 'text-gray-400' },
-  { id: 'mysterious-inferior', value: 1.11, label: '玄阶下', color: 'text-green-600' },
-  { id: 'mysterious-medium', value: 1.18, label: '玄阶中', color: 'text-green-500' },
-  { id: 'mysterious-superior', value: 1.27, label: '玄阶上', color: 'text-green-400' },
-  { id: 'earth-inferior', value: 1.39, label: '地阶下', color: 'text-blue-600' },
-  { id: 'earth-medium', value: 1.56, label: '地阶中', color: 'text-blue-500' },
-  { id: 'earth-superior', value: 1.82, label: '地阶上', color: 'text-blue-400' },
-  { id: 'heaven-inferior', value: 2.22, label: '天阶下', color: 'text-purple-600' },
-  { id: 'heaven-medium', value: 2.94, label: '天阶中', color: 'text-purple-500' },
-  { id: 'heaven-superior', value: 4.55, label: '天阶上', color: 'text-purple-400' },
+  { id: 'yellow-inferior', value: 1.10, label: '黄阶下', color: 'text-gray-500' },
+  { id: 'yellow-medium', value: 1.30, label: '黄阶中', color: 'text-gray-500' },
+  { id: 'yellow-superior', value: 1.60, label: '黄阶上', color: 'text-gray-400' },
+  { id: 'mysterious-inferior', value: 2.00, label: '玄阶下', color: 'text-green-600' },
+  { id: 'mysterious-medium', value: 2.50, label: '玄阶中', color: 'text-green-500' },
+  { id: 'mysterious-superior', value: 3.10, label: '玄阶上', color: 'text-green-400' },
+  { id: 'earth-inferior', value: 3.80, label: '地阶下', color: 'text-blue-600' },
+  { id: 'earth-medium', value: 4.60, label: '地阶中', color: 'text-blue-500' },
+  { id: 'earth-superior', value: 5.5, label: '地阶上', color: 'text-blue-400' },
+  { id: 'heaven-inferior', value: 6.5, label: '天阶下', color: 'text-purple-600' },
+  { id: 'heaven-medium', value: 7.6, label: '天阶中', color: 'text-purple-500' },
+  { id: 'heaven-superior', value: 8.8, label: '天阶上', color: 'text-purple-400' },
 ];
 
 /**
@@ -255,10 +255,10 @@ export const TECHNIQUE_OPTIONS = [
  */
 export const SPIRITUAL_ROOT_OPTIONS = [
   { id: 'waste', value: 'waste' as const, label: '废灵根', sublabel: '五灵根', coefficient: 1.0, color: 'text-red-600' },
-  { id: 'mixed', value: 'mixed' as const, label: '杂灵根', sublabel: '四灵根', coefficient: 1.11, color: 'text-orange-600' },
-  { id: 'triple', value: 'triple' as const, label: '三灵根', sublabel: '三灵根', coefficient: 1.25, color: 'text-yellow-600' },
-  { id: 'dual', value: 'dual' as const, label: '双灵根', sublabel: '双灵根', coefficient: 1.67, color: 'text-green-600' },
-  { id: 'heavenly', value: 'heavenly' as const, label: '天灵根', sublabel: '单灵根', coefficient: 3.33, color: 'text-purple-600' },
+  { id: 'mixed', value: 'mixed' as const, label: '杂灵根', sublabel: '四灵根', coefficient: 1.3, color: 'text-orange-600' },
+  { id: 'triple', value: 'triple' as const, label: '三灵根', sublabel: '三灵根', coefficient: 1.9, color: 'text-yellow-600' },
+  { id: 'dual', value: 'dual' as const, label: '真灵根', sublabel: '双灵根', coefficient: 2.8, color: 'text-green-600' },
+  { id: 'heavenly', value: 'heavenly' as const, label: '天灵根', sublabel: '单灵根', coefficient: 4.00, color: 'text-purple-600' },
 ];
 
 /**

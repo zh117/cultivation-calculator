@@ -5,8 +5,8 @@ import type { CalculationParams, ResourceConfig, SpiritualRootType, UserOverride
 import {
   TECHNIQUE_OPTIONS,
   SPIRITUAL_ROOT_OPTIONS,
-  COMPREHENSION_OPTIONS,
   PHYSIQUE_OPTIONS,
+  COMPREHENSION_OPTIONS,
   ENVIRONMENT_OPTIONS,
   RETREAT_OPTIONS,
   EPIPHANY_OPTIONS,
@@ -251,27 +251,37 @@ export function ParameterPanel({
       ? (userOverrides.spiritualRootOptionValues?.[selectedRoot.id] ?? selectedRoot.coefficient)
       : 1.0;
 
+    // 获取当前选中的体质信息
+    const selectedPhysique = PHYSIQUE_OPTIONS.find(o => {
+      const actualValue = userOverrides.physiqueOptionValues?.[o.id] ?? o.value;
+      return actualValue === params.physiqueFactor;
+    });
+    const physiqueValue = selectedPhysique
+      ? (userOverrides.physiqueOptionValues?.[selectedPhysique.id] ?? selectedPhysique.value)
+      : params.physiqueFactor ?? 1.0;
+
     return {
       technique: techniqueValue.toFixed(2),
       root: rootValue.toFixed(2),
-      result: (techniqueValue * rootValue).toFixed(2),
+      physique: physiqueValue.toFixed(2),
+      result: (techniqueValue * rootValue * physiqueValue).toFixed(2),
       techniqueValue,
       rootValue,
+      physiqueValue,
     };
-  }, [params.techniqueQuality, params.spiritualRootType, userOverrides.techniqueOptionValues, userOverrides.spiritualRootOptionValues]);
+  }, [params.techniqueQuality, params.spiritualRootType, params.physiqueFactor, userOverrides.techniqueOptionValues, userOverrides.spiritualRootOptionValues, userOverrides.physiqueOptionValues]);
 
   // 构建吸收效率详细公式显示
   const absorptionRateFormula = useMemo(() => {
     const comp = params.comprehension ?? 1.0;
-    const phy = params.physiqueFactor ?? 1.0;
     const env = params.environmentFactor ?? 1.0;
     const ret = params.retreatFactor ?? 1.0;
     const epi = params.epiphanyFactor ?? 1.0;
 
     return {
-      result: (comp * phy * env * ret * epi).toFixed(2),
+      result: (comp * env * ret * epi).toFixed(2),
     };
-  }, [params.comprehension, params.physiqueFactor, params.environmentFactor, params.retreatFactor, params.epiphanyFactor]);
+  }, [params.comprehension, params.environmentFactor, params.retreatFactor, params.epiphanyFactor]);
 
   // 基础吸收速度选项
   const absorptionSpeedOptions = [
@@ -527,6 +537,37 @@ export function ParameterPanel({
               ))}
             </div>
           </div>
+
+          {/* 体质血脉 */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-white mb-2 block">
+              体质血脉 <span className="text-xs text-gray-400">({conversionRateFormula.physiqueValue.toFixed(2)})</span>
+            </label>
+            <div className="grid grid-cols-5 gap-1.5">
+              {PHYSIQUE_OPTIONS.map((option) => (
+                <EditableOptionButton
+                  key={option.id}
+                  option={option}
+                  currentValue={params.physiqueFactor ?? 1.0}
+                  customValue={getOptionValue('physiqueOptionValues', option.id, option.value)}
+                  isEditing={editingOptionId === option.id}
+                  editingValue={editingValue}
+                  onEditStart={(id, value) => {
+                    setEditingOptionId(id);
+                    setEditingValue(value.toString());
+                  }}
+                  onEditChange={setEditingValue}
+                  onEditConfirm={(value) => {
+                    saveOptionValue('physiqueOptionValues', option.id, value);
+                    setEditingOptionId(null);
+                    updateParam('physiqueFactor', value as any);
+                  }}
+                  onEditCancel={() => setEditingOptionId(null)}
+                  onSelect={() => updateParam('physiqueFactor', getOptionValue('physiqueOptionValues', option.id, option.value) as any)}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -568,37 +609,6 @@ export function ParameterPanel({
                   }}
                   onEditCancel={() => setEditingOptionId(null)}
                   onSelect={() => updateParam('comprehension', getOptionValue('comprehensionOptionValues', option.id, option.value) as any)}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* 体质血脉 */}
-          <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-white mb-2 block">
-              体质血脉 <span className="text-xs text-gray-400">({(params.physiqueFactor ?? 1.0).toFixed(2)})</span>
-            </label>
-            <div className="grid grid-cols-5 gap-1.5">
-              {PHYSIQUE_OPTIONS.map((option) => (
-                <EditableOptionButton
-                  key={option.id}
-                  option={option}
-                  currentValue={params.physiqueFactor ?? 1.0}
-                  customValue={getOptionValue('physiqueOptionValues', option.id, option.value)}
-                  isEditing={editingOptionId === option.id}
-                  editingValue={editingValue}
-                  onEditStart={(id, value) => {
-                    setEditingOptionId(id);
-                    setEditingValue(value.toString());
-                  }}
-                  onEditChange={setEditingValue}
-                  onEditConfirm={(value) => {
-                    saveOptionValue('physiqueOptionValues', option.id, value);
-                    setEditingOptionId(null);
-                    updateParam('physiqueFactor', value as any);
-                  }}
-                  onEditCancel={() => setEditingOptionId(null)}
-                  onSelect={() => updateParam('physiqueFactor', getOptionValue('physiqueOptionValues', option.id, option.value) as any)}
                 />
               ))}
             </div>

@@ -12,6 +12,9 @@ import { getRealmConfigs } from '@/lib/data/realms';
 /** 默认吸收一颗灵石需要的时辰数 */
 const DEFAULT_HOURS_PER_STONE = 12;
 
+/** 体质系数默认值 */
+const DEFAULT_PHYSIQUE_FACTOR = 1.0;
+
 /** 灵根系数映射表（新体系：值越大越好）
  * 废灵根（五灵根）: 1.0
  * 杂灵根（四灵根）: 1.11
@@ -51,17 +54,18 @@ const BASE_PRODUCTION_PER_LEVEL = 100;
 /**
  * 计算转换率系数（影响资源消耗）
  * 新体系：值越大，消耗越少（公式反转：cost = rawCost / conversionRate）
- * 例如：天灵根(3.33) + 天阶(4.55) = 15.15，消耗 = rawCost / 15.15（最小）
- *      废灵根(1.0) + 黄阶(1.03) = 1.03，消耗 = rawCost / 1.03（最大）
+ * 例如：天灵根(3.33) + 天阶(4.55) + 顶级体质(3.0) = 45.47，消耗 = rawCost / 45.47（最小）
+ *      废灵根(1.0) + 黄阶(1.03) + 普通体质(1.0) = 1.03，消耗 = rawCost / 1.03（最大）
  */
 export function calculateConversionRate(params: CultivationParams, overrides?: CoefficientOverrides): number {
   // 优先使用覆盖值
   const technique = overrides?.techniqueQuality ?? params.techniqueQuality ?? 1.0;
   const spiritualRootType = params.spiritualRootType ?? 'waste';
   const spiritualRootCoeff = overrides?.spiritualRootCoeff ?? SPIRITUAL_ROOT_COEFFICIENTS[spiritualRootType] ?? 1.0;
+  const physique = overrides?.physiqueFactor ?? params.physiqueFactor ?? DEFAULT_PHYSIQUE_FACTOR;
 
   // 新公式：值越大，转换率越高，消耗越少
-  return technique * spiritualRootCoeff;
+  return technique * spiritualRootCoeff * physique;
 }
 
 /**
@@ -70,11 +74,10 @@ export function calculateConversionRate(params: CultivationParams, overrides?: C
  */
 export function calculateAbsorptionRate(params: AbsorptionParams, overrides?: CoefficientOverrides): number {
   const comprehension = overrides?.comprehension ?? params.comprehension ?? 1.0;
-  const physique = overrides?.physiqueFactor ?? params.physiqueFactor ?? 1.0;
   const environment = overrides?.environmentFactor ?? params.environmentFactor ?? 1.0;
   const retreat = overrides?.retreatFactor ?? params.retreatFactor ?? 1.0;
   const epiphany = overrides?.epiphanyFactor ?? params.epiphanyFactor ?? 1.0;
-  return comprehension * physique * environment * retreat * epiphany;
+  return comprehension * environment * retreat * epiphany;
 }
 
 /**
@@ -96,8 +99,8 @@ export function getCalculationDisplay(params: CalculationParams, overrides?: Coe
  * 公式（新体系）：
  * - 首境（炼气1→2）= baseCost / conversionRate
  * - 首境后续小境界 = baseCost × smallRealmMultiplier^(subLevelIndex - 1) / conversionRate
- * - 跨大境界 = 前境界最后小境界消耗 × largeRealmMultiplier（或筑基倍率）
- * - 新大境界小境界 = 跨大境界消耗 × smallRealmMultiplier^subLevelIndex
+ * - 筑基期 = 首境圆满消耗 × 筑基倍率 × 小境界倍率^小境界索引
+ * - 后续大境界 = 前一大境界圆满消耗 × 大境界倍率 × 小境界倍率^小境界索引
  *
  * @param baseCost - 基数
  * @param smallMultiplier - 小境界系数
@@ -132,23 +135,30 @@ export function calculateSubLevelCost(
     return (baseCost * Math.pow(smallMultiplier, subLevelIndex)) / conversionRate;
   }
 
-  // 计算首境最后一个小境界的消耗
-  const firstRealmLastCost = baseCost * Math.pow(smallMultiplier, firstRealmSubLevels - 1);
+  // 计算炼气圆满的消耗（作为后续所有境界的基础参考点）
+  const qiRefiningLastCost = baseCost * Math.pow(smallMultiplier, firstRealmSubLevels - 1);
 
-  // 炼气→筑基（realmIndex=1）使用筑基独立倍率（如果有）
-  // 筑基期只需要按筑基倍率放大，不需要再乘以大境界倍率
-  if (realmIndex === 1 && foundationMultiplier) {
-    // 筑基期基数 = 首境最后小境界消耗 × 筑基倍率
-    const realmBaseCost = firstRealmLastCost * foundationMultiplier;
+  // 筑基期（realmIndex=1）：使用筑基独立倍率
+  if (realmIndex === 1) {
+    // 筑基期基数 = 炼气圆满消耗 × 筑基倍率（或大境界倍率）
+    const foundationBase = foundationMultiplier ?? largeMultiplier;
+    const realmBaseCost = qiRefiningLastCost * foundationBase;
     // 筑基期小境界 = 基数 × 小境界倍率^小境界索引
     return (realmBaseCost * Math.pow(smallMultiplier, subLevelIndex)) / conversionRate;
   }
 
-  // 其他大境界：使用原有逻辑
-  // 计算本大境界的基数
-  const realmBaseCost = firstRealmLastCost * Math.pow(largeMultiplier, realmIndex - 1);
+  // 金丹期及之后（realmIndex≥2）：基于前一大境界圆满消耗
+  // 前一大境界（筑基期）圆满消耗 = 炼气圆满 × 筑基倍率 × 小境界倍率^3
+  const foundationBase = foundationMultiplier ?? largeMultiplier;
+  const foundationLastCost = qiRefiningLastCost * foundationBase * Math.pow(smallMultiplier, 3);
 
-  // 本大境界第一个小境界
+  // 从金丹期开始，每跨越一个大境界，乘以大境界倍率
+  // realmIndex=2(金丹): 跨越0个大境界（从筑基算起）
+  // realmIndex=3(元婴): 跨越1个大境界
+  const realmsAfterFoundation = realmIndex - 2;
+  const realmBaseCost = foundationLastCost * Math.pow(largeMultiplier, realmsAfterFoundation);
+
+  // 本大境界第一个小境界需要再乘以大境界倍率进入新境界
   if (subLevelIndex === 0) {
     return (realmBaseCost * largeMultiplier) / conversionRate;
   }
